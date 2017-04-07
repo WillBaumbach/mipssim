@@ -8,12 +8,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Scanner;
 import java.util.regex.PatternSyntaxException;
 
 public class Simulator 
 {
-	static String filepath = "";
+	static String filepath = "/Users/admin/Documents/workspace/mipssim/src/mipssim/Untitled.txt";
 	
 	//Initial parameters
 	int numRegisters 	= 	32;
@@ -21,7 +22,7 @@ public class Simulator
 	int maxLabelLength	=	32;
 	int maxNumLabels	=	32;
 	int	maxLineLength	=	256;
-	int memInsStart 	= 	0x4000;
+	static int memInsStart 	= 	0x4000;
 	int memDataStart 	= 	0x1000;
 	int memDataSize 	=	0x1000;
 	int regGP			=	28;
@@ -108,9 +109,17 @@ public class Simulator
 		 {
 			 
 			currentString = s.get(n);
-			currentString.trim();
-			currentString.replace(",", "");
-			currentString.replace("$", "");
+			System.out.println(currentString);
+			currentString = currentString.trim();
+			System.out.println(currentString);
+			currentString = currentString.replace(",", "");
+			System.out.println(currentString);
+			currentString = currentString.replace("$", "");
+			System.out.println(currentString);
+			currentString = currentString.replace("r", "");
+			System.out.println(currentString);
+			currentString = currentString.replace("R", "");
+			System.out.println(currentString);
 
 			tempArray = currentString.split("\\s+");
 			switch (tempArray[0])
@@ -140,12 +149,12 @@ public class Simulator
 					tempString = R + rs + rt + rd + "00000" + SUB;
 					ins[n] = tempString;
 					break;
-					// Needs Work
 				case "addi":
-					tempString = ADDI;
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
-					tempString = ADDI + rs + rt + rd + "00000" + SUB; //Wrong
+					immediate = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
+					tempString = ADDI + rs + rt + immediate;
+					ins[n] = tempString;
 					break;
 					// Needs Work
 				case "bne":
@@ -191,8 +200,22 @@ public class Simulator
 	 
 	 
 	 
-	 public static void main(String args)
+	 public static void main(String[] args)
 	 {
+		 
+		 String ALUSrcA;
+		 String IorD;
+		 String ALUSrcB;
+		 String ALUOp;
+		 String PCSource;
+		 Boolean stall = false;
+		 
+		 // Change these to HashMap for easy Key,Value search.
+		 String[] IFtoID = new String[10];
+		 String[] IDtoEXE = new String[10];
+		 String[] EXEtoMEM = new String[10];
+		 String[] MEMtoWB = new String[10];
+		 
 		Scanner kbd = new Scanner(System.in);
 		boolean running = true;
 		int cycles = 0;
@@ -208,19 +231,63 @@ public class Simulator
 			e.printStackTrace();
 		}
 		instructions = inputToBinary(insArray);
-		 
+
+		
 		///////////////
 		// Main Loop //
 		///////////////
+		
+		int count = 0;
 		while(running)
 		{
+			
 			cycles = kbd.nextInt();
-			 
-			for(i = 0; i < cycles; i++)
+			if(i + count <= insArray.size())
 			{
-				// Implement step by step methods for pipeline.
-				
-			} 
+				for(i = 0; i < cycles; i++)
+				{
+					// IF Stage
+					ALUSrcA = "0";
+					IorD = "0";
+					ALUSrcB = "01";
+					ALUOp = "00";
+					PCSource = "00";
+					
+					
+					System.out.println("========");
+					System.out.println("IF STAGE");
+					System.out.println("========");
+					System.out.println("Instruction Fetched: " + insArray.get(count) + " from 0x" + (4 * count + 4000));
+					count++;
+					// ID Stage
+					if(IFtoID != null && IFtoID.length > 0)
+					{
+						String decodedIns = instructions[count - 1];
+						
+						
+						System.out.println("========");
+						System.out.println("ID STAGE");
+						System.out.println("========");
+						System.out.println("Instruction Decoded: " + decodedIns);
+					}
+					else
+					{
+						// Do nothing
+					}
+					// EX Stage
+					
+					// MEM Stage
+					
+					// WB Stage
+					
+				}
+			}
+			else
+			{
+				System.out.println("==============");
+				System.out.println("End of Program");
+				System.out.println("==============");
+			}
 		}
 	}
 	 
