@@ -8,10 +8,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Scanner;
 import java.util.regex.PatternSyntaxException;
 
 public class Simulator 
 {
+	static String filepath = "";
+	
+	//Initial parameters
 	int numRegisters 	= 	32;
 	int maxNumIns 		= 	256;
 	int maxLabelLength	=	32;
@@ -22,18 +26,34 @@ public class Simulator
 	int memDataSize 	=	0x1000;
 	int regGP			=	28;
 	int regSP			=	29;
-	int NOP = 	-1;
-	static int LW= 		35;
-	static int SW = 	43;
-	static int ADD = 	32;
-	static int SUB = 	34;
-	static int ADDI = 	8;
-	static int BNE = 	5;
-	static int BEQ = 	4;
-	static int AND = 	36;
-	static int OR = 	37;
-	static int NOR = 	39;
-	static int XOR = 	38;
+	int NOP = 				-1;
+	
+	// OpCode + Type
+	static String R = 		"000000";
+	static String LW = 		"100011";
+	static String SW = 		"101011";
+	static String ADD = 	"100000";
+	static String SUB = 	"100010";
+	static String ADDI = 	"001000";
+	static String BNE = 	"000101";
+	static String BEQ = 	"000100";
+	static String AND = 	"100100";
+	static String OR =	 	"100101";
+	static String NOR = 	"100111";
+	static String XOR = 	"100110";
+	
+	//Control Signals
+	int RegDst;
+	int Jump;
+	int Branch;
+	int MemRead;
+	int MemtoReg;
+	int ALUOp;
+	int MemWrite;
+	int ALUSrc;
+	int RegWrite;
+	
+	// Other variables
 	static int rs = -1;
 	static int rt = -1;
 	static int rd = -1;
@@ -41,9 +61,12 @@ public class Simulator
 	int addr = 0;
 	int[] regFile = new int[numRegisters];
 	int[] dataMem = new int[memDataSize/4];
-	ArrayList<String> insArray = new ArrayList<String>();
+	static ArrayList<String> insArray = new ArrayList<String>();
+	static String[] instructions = new String[128];
+	static int numIns = 0;
 	
-	 public static String[] loadFile(String input) throws FileNotFoundException, EOFException, IOException
+	 @SuppressWarnings("resource")
+	public static ArrayList<String> loadFile(String input) throws FileNotFoundException, EOFException, IOException
 	 {
 		 String path = input;
 		 BufferedReader br = null;
@@ -53,78 +76,152 @@ public class Simulator
 		 fs = new FileInputStream(path);
 		 br = new BufferedReader(new InputStreamReader(fs));
 		 ArrayList<String> lineArray = new ArrayList<String>();
-		 int numIns = 0;
 		 while((line = br.readLine()) != null)
 		 {
 			 lineArray.add(line);
+			 numIns++;
          }
+		 
+		 
+		 return lineArray;
 	 }
              
-	 
-	 public static int[][] stringsToInts(ArrayList<String> s)
+	 /*
+	  * TODO: 	Add data structure to hold labels and addresses
+	  * 		Finish the code for I type and J ins
+	  * 
+	  * 
+	  * */
+	 public static String[] inputToBinary(ArrayList<String> s)
 	 {
-		 int[] ins = new int[128];
+		 String[] ins = new String[128];
 		 String currentString;
-		 String[] tempArray = new String[6];
-		 int[] tempIntArray = new int[6];
+		 String[] tempArray = new String[4];
+		 String tempString = "";
+		 String rs = "";
+		 String rt = "";
+		 String rd = "";
+		 String immediate = "";
+		 String target = "";
 		 
 		 for(int n = 0; n < s.size(); n++)
 		 {
 			 
-			 currentString = s.get(n);
-			 currentString.trim();
-			 currentString.replace(",", "");
-			 currentString.replace("$", "");
+			currentString = s.get(n);
+			currentString.trim();
+			currentString.replace(",", "");
+			currentString.replace("$", "");
 
-			 tempArray = currentString.split("\\s+");
-			 
-			 for(int i = 0; n < tempArray.length; n++)
-			 {
-				 if(n == 0)
-				 {
-					
-					switch (currentString)
-					{
-						case "lw":
-							tempIntArray[0] = LW;
-							break;
-						case "sw":
-							tempIntArray[0] = SW;
-							break;
-						case "add":
-							tempIntArray[0] = ADD;
-							break;
-						case "sub":
-							tempIntArray[0] = SUB;
-							break;
-						case "addi":
-							tempIntArray[0] = ADDI;
-							break;
-						case "bne":
-							tempIntArray[0] = BNE;
-							break;
-						case "beq":
-							tempIntArray[0] = BEQ;
-							break;
-						case "and":
-							tempIntArray[0] = AND;
-							break;
-						case "or":
-							tempIntArray[0] = OR;
-							break;
-						case "nor":
-							tempIntArray[0] = NOR;
-							break;
-						case "xor":
-							tempIntArray[0] = XOR;
-							break;
-					}
-				 }
-				 
-				 tempIntArray[n] = Integer.parseInt(currentString);
-			 }
+			tempArray = currentString.split("\\s+");
+			switch (tempArray[0])
+			{
+				// Needs work
+				case "lw":
+					tempString = LW;
+					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
+					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
+					immediate = tempArray[3];
+					break;
+				// Needs Work
+				case "sw":
+					tempString = SW;
+					break;
+				case "add":
+					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
+					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
+					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
+					tempString = R + rs + rt + rd + "00000" + ADD;
+					ins[n] = tempString;
+					break;
+				case "sub":
+					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
+					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
+					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
+					tempString = R + rs + rt + rd + "00000" + SUB;
+					ins[n] = tempString;
+					break;
+					// Needs Work
+				case "addi":
+					tempString = ADDI;
+					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
+					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
+					tempString = ADDI + rs + rt + rd + "00000" + SUB; //Wrong
+					break;
+					// Needs Work
+				case "bne":
+					tempString = BNE;
+					break;
+					// Needs Work
+				case "beq":
+					tempString = BEQ;
+					break;
+				case "and":
+					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
+					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
+					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
+					tempString = R + rs + rt + rd + "00000" + AND;
+					ins[n] = tempString;
+					break;
+				case "or":
+					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
+					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
+					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
+					tempString = R + rs + rt + rd + "00000" + OR;
+					ins[n] = tempString;
+					break;
+				case "nor":
+					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
+					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
+					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
+					tempString = R + rs + rt + rd + "00000" + NOR;
+					ins[n] = tempString;
+					break;
+				case "xor":
+					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
+					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
+					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
+					tempString = R + rs + rt + rd + "00000" + XOR;
+					ins[n] = tempString;
+					break;
+			}
 		 }
+		 ins[s.size() + 1] = "end";
+		 return ins;
 	 }
 	 
-	
+	 
+	 
+	 public static void main(String args)
+	 {
+		Scanner kbd = new Scanner(System.in);
+		boolean running = true;
+		int cycles = 0;
+		int i = 0;
+		 
+		try {
+			insArray = loadFile(filepath);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (EOFException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		instructions = inputToBinary(insArray);
+		 
+		///////////////
+		// Main Loop //
+		///////////////
+		while(running)
+		{
+			cycles = kbd.nextInt();
+			 
+			for(i = 0; i < cycles; i++)
+			{
+				// Implement step by step methods for pipeline.
+				
+			} 
+		}
+	}
+	 
 }
