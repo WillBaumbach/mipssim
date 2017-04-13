@@ -14,7 +14,7 @@ import java.util.regex.PatternSyntaxException;
 
 public class Simulator 
 {
-	static String filepath = "/Users/admin/Documents/workspace/mipssim/src/mipssim/Untitled.txt";
+	static String filepath = "src/mipssim/Untitled.txt";
 	
 	//Initial parameters
 	int numRegisters 	= 	32;
@@ -22,7 +22,7 @@ public class Simulator
 	int maxLabelLength	=	32;
 	int maxNumLabels	=	32;
 	int	maxLineLength	=	256;
-	static int memInsStart 	= 	0x4000;
+	static int PCPointer 	= 	16384;
 	int memDataStart 	= 	0x1000;
 	int memDataSize 	=	0x1000;
 	int regGP			=	28;
@@ -63,7 +63,7 @@ public class Simulator
 	int[] regFile = new int[numRegisters];
 	int[] dataMem = new int[memDataSize/4];
 	static ArrayList<String> insArray = new ArrayList<String>();
-	static String[] instructions = new String[128];
+	static String instruction = null;
 	static int numIns = 0;
 	
 	 @SuppressWarnings("resource")
@@ -93,9 +93,9 @@ public class Simulator
 	  * 
 	  * 
 	  * */
-	 public static String[] inputToBinary(ArrayList<String> s)
+	 public static String inputToBinary(String s)
 	 {
-		 String[] ins = new String[128];
+		 String ins = null;
 		 String currentString;
 		 String[] tempArray = new String[4];
 		 String tempString = "";
@@ -104,26 +104,19 @@ public class Simulator
 		 String rd = "";
 		 String immediate = "";
 		 String target = "";
-		 
-		 for(int n = 0; n < s.size(); n++)
-		 {
-			 
-			currentString = s.get(n);
-			System.out.println(currentString);
-			currentString = currentString.trim();
-			System.out.println(currentString);
+		
+			currentString = s;
+			currentString = currentString.trim();           
 			currentString = currentString.replace(",", "");
-			System.out.println(currentString);
 			currentString = currentString.replace("$", "");
-			System.out.println(currentString);
 			currentString = currentString.replace("r", "");
-			System.out.println(currentString);
 			currentString = currentString.replace("R", "");
-			System.out.println(currentString);
+
 
 			tempArray = currentString.split("\\s+");
 			switch (tempArray[0])
 			{
+			
 				// Needs work
 				case "lw":
 					tempString = LW;
@@ -131,6 +124,7 @@ public class Simulator
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
 					immediate = tempArray[3];
 					break;
+					
 				// Needs Work
 				case "sw":
 					tempString = SW;
@@ -140,26 +134,28 @@ public class Simulator
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
 					tempString = R + rs + rt + rd + "00000" + ADD;
-					ins[n] = tempString;
+					ins = tempString;
 					break;
 				case "sub":
 					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
 					tempString = R + rs + rt + rd + "00000" + SUB;
-					ins[n] = tempString;
+					ins = tempString;
 					break;
 				case "addi":
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
 					immediate = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
 					tempString = ADDI + rs + rt + immediate;
-					ins[n] = tempString;
+					ins = tempString;
 					break;
+					
 					// Needs Work
 				case "bne":
 					tempString = BNE;
 					break;
+					
 					// Needs Work
 				case "beq":
 					tempString = BEQ;
@@ -169,32 +165,30 @@ public class Simulator
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
 					tempString = R + rs + rt + rd + "00000" + AND;
-					ins[n] = tempString;
+					ins = tempString;
 					break;
 				case "or":
 					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
 					tempString = R + rs + rt + rd + "00000" + OR;
-					ins[n] = tempString;
+					ins = tempString;
 					break;
 				case "nor":
 					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
 					tempString = R + rs + rt + rd + "00000" + NOR;
-					ins[n] = tempString;
+					ins = tempString;
 					break;
 				case "xor":
 					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
 					tempString = R + rs + rt + rd + "00000" + XOR;
-					ins[n] = tempString;
+					ins = tempString;
 					break;
 			}
-		 }
-		 ins[s.size() + 1] = "end";
 		 return ins;
 	 }
 	 
@@ -202,7 +196,7 @@ public class Simulator
 	 
 	 public static void main(String[] args)
 	 {
-		 
+		 int PC = 0;
 		 String ALUSrcA;
 		 String IorD;
 		 String ALUSrcB;
@@ -211,7 +205,7 @@ public class Simulator
 		 Boolean stall = false;
 		 
 		 // Change these to HashMap for easy Key,Value search.
-		 String[] IFtoID = new String[10];
+		 String[] IFtoID = new String[2];
 		 String[] IDtoEXE = new String[10];
 		 String[] EXEtoMEM = new String[10];
 		 String[] MEMtoWB = new String[10];
@@ -230,7 +224,6 @@ public class Simulator
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		instructions = inputToBinary(insArray);
 
 		
 		///////////////
@@ -246,47 +239,98 @@ public class Simulator
 			{
 				for(i = 0; i < cycles; i++)
 				{
+					System.out.println("");
+					System.out.println("Cycle: " + count);
 					// IF Stage
-					ALUSrcA = "0";
-					IorD = "0";
-					ALUSrcB = "01";
-					ALUOp = "00";
-					PCSource = "00";
-					
-					
-					System.out.println("========");
-					System.out.println("IF STAGE");
-					System.out.println("========");
-					System.out.println("Instruction Fetched: " + insArray.get(count) + " from 0x" + (4 * count + 4000));
-					count++;
-					// ID Stage
-					if(IFtoID != null && IFtoID.length > 0)
+					if(insArray.size() > count)
 					{
-						String decodedIns = instructions[count - 1];
+						ALUSrcA = "0";
+						IorD = "0";
+						ALUSrcB = "01";
+						ALUOp = "00";
+						PCSource = "00";
+						PC = PCPointer;
 						
-						
-						System.out.println("========");
-						System.out.println("ID STAGE");
-						System.out.println("========");
+						System.out.println("");
+						System.out.println("  IFtoID REG  ");
+						System.out.println("==============");
+						System.out.println("Instruction Fetched: " + insArray.get(count) + " from 0x" + Integer.toHexString(PC));
+
+					}
+					else
+					{
+						IFtoID[0] = "";
+					}
+					
+					// ID Stage
+					if(count > 0)
+					{
+						String s = IFtoID[0];
+						String decodedIns = inputToBinary(s);
+						System.out.println("");
+						System.out.println("  IDtoEX REG  ");
+						System.out.println("==============");
 						System.out.println("Instruction Decoded: " + decodedIns);
 					}
 					else
 					{
-						// Do nothing
+						
 					}
 					// EX Stage
-					
+					if(count > 1)
+					{
+						
+						System.out.println("");
+						System.out.println("  EXtoME REG  ");
+						System.out.println("==============");
+						//System.out.println("Instruction Decoded: " + decodedIns);
+					}
+					else
+					{
+						
+					}
 					// MEM Stage
-					
+					if(count > 2)
+					{
+						
+						System.out.println("");
+						System.out.println("  MEtoWB REG  ");
+						System.out.println("==============");
+						//System.out.println("Instruction Decoded: " + decodedIns);
+					}
+					else
+					{
+						
+					}
 					// WB Stage
+					if(count > 3)
+					{
+						
+						System.out.println("");
+						System.out.println("  WB STAGE  ");
+						System.out.println("============");
+						//System.out.println("Instruction Decoded: " + decodedIns);
+					}
+					else
+					{
+						
+					}
 					
+					//Pipeline Register update
+					PC+=4;
+					IFtoID[0] = insArray.get(count);
+					System.out.println(IFtoID[0]);
+					IFtoID[1] = ""+PC+"";
+					
+					
+					count++;
 				}
 			}
 			else
 			{
-				System.out.println("==============");
-				System.out.println("End of Program");
-				System.out.println("==============");
+				System.out.println("==================");
+				System.out.println("= End of Program =");
+				System.out.println("==================");
 			}
 		}
 	}
