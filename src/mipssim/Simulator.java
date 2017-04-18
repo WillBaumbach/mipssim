@@ -17,20 +17,20 @@ public class Simulator
 	static String filepath = "src/mipssim/Untitled.txt";
 	
 	//Initial parameters
-	int numRegisters 	= 	32;
-	int maxNumIns 		= 	256;
-	int maxLabelLength	=	32;
-	int maxNumLabels	=	32;
-	int	maxLineLength	=	256;
-	static int PCPointer 	= 	16384;
-	int memDataStart 	= 	0x1000;
-	int memDataSize 	=	0x1000;
-	int regGP			=	28;
-	int regSP			=	29;
-	int NOP = 				-1;
+	static int numRegisters 	= 	32;
+	int maxNumIns 				= 	256;
+	int maxLabelLength			=	32;
+	int maxNumLabels			=	32;
+	int	maxLineLength			=	256;
+	static int PCPointer 		= 	16384;
+	int memDataStart 			= 	0x1000;
+	int memDataSize 			=	0x1000;
+	int regGP					=	28;
+	int regSP					=	29;
+	int NOP 					= 	-1;
 	
-	// OpCode + Type
-	static String R = 		"000000";
+	// OpCode + Function
+	static String _R = 		"000000";
 	static String LW = 		"100011";
 	static String SW = 		"101011";
 	static String ADD = 	"100000";
@@ -44,15 +44,14 @@ public class Simulator
 	static String XOR = 	"100110";
 	
 	//Control Signals
-	int RegDst;
-	int Jump;
-	int Branch;
-	int MemRead;
-	int MemtoReg;
-	int ALUOp;
-	int MemWrite;
-	int ALUSrc;
-	int RegWrite;
+	static int RegDst;
+	static int ALUSrc;
+	static int MemtoReg;
+	static int RegWrite;
+	static int MemRead;
+	static int MemWrite;
+	static int Branch;
+	static int ALUOp;
 	
 	// Other variables
 	static int rs = -1;
@@ -60,7 +59,7 @@ public class Simulator
 	static int rd = -1;
 	int i = 0;
 	int addr = 0;
-	int[] regFile = new int[numRegisters];
+	static int[] regFile = new int[numRegisters];
 	int[] dataMem = new int[memDataSize/4];
 	static ArrayList<String> insArray = new ArrayList<String>();
 	static String instruction = null;
@@ -117,15 +116,16 @@ public class Simulator
 			switch (tempArray[0])
 			{
 			
-				// Needs work
+				// TODO: Make sure immediate is correct, and make sure formatting take "()" into consideration
 				case "lw":
 					tempString = LW;
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
 					immediate = tempArray[3];
+					ins = LW + rs + rt + immediate;
 					break;
 					
-				// Needs Work
+				// TODO: This
 				case "sw":
 					tempString = SW;
 					break;
@@ -133,14 +133,14 @@ public class Simulator
 					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
-					tempString = R + rs + rt + rd + "00000" + ADD;
+					tempString = _R + rs + rt + rd + "00000" + ADD;
 					ins = tempString;
 					break;
 				case "sub":
 					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
-					tempString = R + rs + rt + rd + "00000" + SUB;
+					tempString = _R + rs + rt + rd + "00000" + SUB;
 					ins = tempString;
 					break;
 				case "addi":
@@ -151,41 +151,43 @@ public class Simulator
 					ins = tempString;
 					break;
 					
-					// Needs Work
+					// TODO: Make sure immediate is correct
 				case "bne":
-					tempString = BNE;
+					immediate = String.format("%26s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
+					tempString = BNE + immediate;
 					break;
 					
-					// Needs Work
+					// TODO: Make sure immediate is correct
 				case "beq":
-					tempString = BEQ;
+					immediate = String.format("%26s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
+					tempString = BEQ + immediate;
 					break;
 				case "and":
 					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
-					tempString = R + rs + rt + rd + "00000" + AND;
+					tempString = _R + rs + rt + rd + "00000" + AND;
 					ins = tempString;
 					break;
 				case "or":
 					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
-					tempString = R + rs + rt + rd + "00000" + OR;
+					tempString = _R + rs + rt + rd + "00000" + OR;
 					ins = tempString;
 					break;
 				case "nor":
 					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
-					tempString = R + rs + rt + rd + "00000" + NOR;
+					tempString = _R + rs + rt + rd + "00000" + NOR;
 					ins = tempString;
 					break;
 				case "xor":
 					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
-					tempString = R + rs + rt + rd + "00000" + XOR;
+					tempString = _R + rs + rt + rd + "00000" + XOR;
 					ins = tempString;
 					break;
 			}
@@ -196,19 +198,27 @@ public class Simulator
 	 
 	 public static void main(String[] args)
 	 {
-		 int PC = 0;
-		 String ALUSrcA;
-		 String IorD;
-		 String ALUSrcB;
-		 String ALUOp;
+		 int PC = PCPointer;
+		 String decodedIns = "";
 		 String PCSource;
+		 String op = "";
+		 String rs = "";
+		 String rt = "";
+		 String rd = "";
+		 String shift = "";
+		 String func = "";
+		 int a = 0;
+		 int b = 0;
+		 int c = 0;
+		 
 		 Boolean stall = false;
+		
 		 
 		 // Change these to HashMap for easy Key,Value search.
-		 String[] IFtoID = new String[2];
-		 String[] IDtoEXE = new String[10];
-		 String[] EXEtoMEM = new String[10];
-		 String[] MEMtoWB = new String[10];
+		 String[] IFtoID = new String[3]; 		// 0: Instruction 1: Binary of Instruction 2: PC+4
+		 String[] IDtoEXE = new String[10];		// 0: Instruction 1: rd 2: A 3: B 4: PC+4
+		 String[] EXEtoMEM = new String[10];	// 0: Instruction
+		 String[] MEMtoWB = new String[10];		// 0: Instruction
 		 
 		Scanner kbd = new Scanner(System.in);
 		boolean running = true;
@@ -235,51 +245,116 @@ public class Simulator
 		{
 			
 			cycles = kbd.nextInt();
-			if(i + count <= insArray.size())
+			if(i + count <= insArray.size() && IDtoEXE[0] != null && EXEtoMEM[0] != null && MEMtoWB[0] != null)
 			{
 				for(i = 0; i < cycles; i++)
 				{
 					System.out.println("");
 					System.out.println("Cycle: " + count);
+					
 					// IF Stage
 					if(insArray.size() > count)
 					{
-						ALUSrcA = "0";
-						IorD = "0";
-						ALUSrcB = "01";
-						ALUOp = "00";
-						PCSource = "00";
-						PC = PCPointer;
+						String s = insArray.get(count);
+						decodedIns = inputToBinary(s);
 						
 						System.out.println("");
 						System.out.println("  IFtoID REG  ");
 						System.out.println("==============");
 						System.out.println("Instruction Fetched: " + insArray.get(count) + " from 0x" + Integer.toHexString(PC));
-
+						System.out.println("PC + 4 = 0x" + Integer.toHexString(PC+4));
+						System.out.println("Instruction: " + decodedIns);
 					}
 					else
 					{
-						IFtoID[0] = "";
+						IFtoID[0] = null;
 					}
 					
 					// ID Stage
-					if(count > 0)
+					// TODO: Implement other instruction types
+					//		- Add control signals
+					if(count > 0 && IFtoID[0] != null)
 					{
-						String s = IFtoID[0];
-						String decodedIns = inputToBinary(s);
+						op = IFtoID[1].substring(0, 6);
+						System.out.println(op);
+						// R-Type
+						if(op.equals(_R))
+						{
+							RegDst = 1;
+							ALUSrc = 0;
+							MemtoReg = 0;
+							RegWrite = 1;
+							MemRead = 0;
+							MemWrite = 0;
+							Branch = 0;
+							ALUOp = 10;
+							rs = IFtoID[1].substring(6, 11);
+							rt = IFtoID[1].substring(11, 16);
+							rd = IFtoID[1].substring(16, 21);
+							shift = IFtoID[1].substring(21, 26);
+							func = IFtoID[1].substring(26, 32);
+							int temp1 = Integer.parseInt(rs, 2);
+							int temp2 = Integer.parseInt(rt, 2);
+							a = regFile[temp1];
+							b = regFile[temp2];
+						}
+						else if (op.equals(LW))
+						{
+							RegDst = 0;
+							ALUSrc = 1;
+							MemtoReg = 1;
+							RegWrite = 1;
+							MemRead = 1;
+							MemWrite = 0;
+							Branch = 0;
+							ALUOp = 0;
+						}
+						else if (op.equals(SW))
+						{
+							RegDst = 0;
+							ALUSrc = 1;
+							MemtoReg = 0;
+							RegWrite = 0;
+							MemRead = 0;
+							MemWrite = 1;
+							Branch = 0;
+							ALUOp = 0;
+						}
+						else if (op.equals(BNE) || op.equals(BEQ))
+						{
+							RegDst = 0;
+							ALUSrc = 0;
+							MemtoReg = 0;
+							RegWrite = 1;
+							MemRead = 0;
+							MemWrite = 0;
+							Branch = 1;
+							ALUOp = 01;
+						}
+						
 						System.out.println("");
 						System.out.println("  IDtoEX REG  ");
 						System.out.println("==============");
-						System.out.println("Instruction Decoded: " + decodedIns);
+						System.out.println("Instruction Decoded: " + insArray.get(count-1));
+						System.out.println("Value at rs: " + a);
+						System.out.println("Value at rt: " + b);
+						System.out.println("rd: " + rd);
+						System.out.println("shift: " + shift);
+						System.out.println("func: " + func);
+						
 					}
 					else
 					{
-						
+						System.out.println("");
+						System.out.println("  IDtoEX REG  ");
+						System.out.println("==============");
+						System.out.println("Instruction Decoded: NOP");
+						IDtoEXE[0] = null;
 					}
 					// EX Stage
-					if(count > 1)
+					//TODO: Implement this
+					if(count > 1 && IDtoEXE[0] != null)
 					{
-						
 						System.out.println("");
 						System.out.println("  EXtoME REG  ");
 						System.out.println("==============");
@@ -287,10 +362,11 @@ public class Simulator
 					}
 					else
 					{
-						
+						EXEtoMEM[0] = null;
 					}
-					// MEM Stage
-					if(count > 2)
+					// MEM Stage 
+					// TODO: Implement this
+					if(count > 2 && EXEtoMEM[0] != null)
 					{
 						
 						System.out.println("");
@@ -300,9 +376,14 @@ public class Simulator
 					}
 					else
 					{
-						
+						MEMtoWB[0] = null;
+						System.out.println("");
+						System.out.println("  MEtoWB REG  ");
+						System.out.println("==============");
+						System.out.println("NOP");
 					}
 					// WB Stage
+					// TODO: Implement this
 					if(count > 3)
 					{
 						
@@ -316,11 +397,35 @@ public class Simulator
 						
 					}
 					
-					//Pipeline Register update
+					//Pipeline Register MEMtoWB Update
+					// TODO: Add all register info
+					MEMtoWB[0] = EXEtoMEM[0];
+					
+					
+					// Pipeline Register EXEtoMEM Update
+					// TODO: Add all pipeline info
+					EXEtoMEM[0] = IDtoEXE[0];
+					
+					
+					// Pipeline Register IDtoEXE Update
+					// TODO: Check if all this is correct
+					//		- Add control signals
+					IDtoEXE[0] = IFtoID[0];
+					IDtoEXE[1] = rd;
+					IDtoEXE[2] = Integer.toBinaryString(a);
+					IDtoEXE[3] = Integer.toBinaryString(b);
+					IDtoEXE[4] = IFtoID[2];
+					
+					
+					
+					// Pipeline Register IFtoID Update
 					PC+=4;
 					IFtoID[0] = insArray.get(count);
-					System.out.println(IFtoID[0]);
-					IFtoID[1] = ""+PC+"";
+					//System.out.println("IF_ID = " + IFtoID[0]);
+					IFtoID[1] = decodedIns;
+					IFtoID[2] = Integer.toString(PC);
+					
+					
 					
 					
 					count++;
