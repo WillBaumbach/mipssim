@@ -28,18 +28,18 @@ public class Simulator
 	int NOP 					= 	-1;
 	
 	// OpCode + Function
-	static String _R = 		"000000";
-	static String LW = 		"100011";
-	static String SW = 		"101011";
-	static String ADD = 	"100000";
-	static String SUB = 	"100010";
-	static String ADDI = 	"001000";
-	static String BNE = 	"000101";
-	static String BEQ = 	"000100";
-	static String AND = 	"100100";
-	static String OR =	 	"100101";
-	static String NOR = 	"100111";
-	static String XOR = 	"100110";
+	static final String _R 	= 	"000000";
+	static final String LW 	= 	"100011";
+	static final String SW 	= 	"101011";
+	static final String ADD = 	"100000";
+	static final String SUB = 	"100010";
+	static final String ADDI = 	"001000";
+	static final String BNE = 	"000101";
+	static final String BEQ = 	"000100";
+	static final String AND = 	"100100";
+	static final String OR 	=	 "100101";
+	static final String NOR = 	"100111";
+	static final String XOR = 	"100110";
 	
 	//Control Signals
 	static int RegDst;
@@ -214,6 +214,12 @@ public class Simulator
 		 String imm = "";
 		 String shift = "";
 		 String func = "";
+		 
+		 int temp = 0;
+		 String answer = "N/A";
+		 String location = "N/A";
+		 String target = "N/A";
+		 
 		 int a = 0;
 		 int b = 0;
 		 int c = 0;
@@ -223,7 +229,7 @@ public class Simulator
 		 
 		 // Change these to HashMap for easy Key,Value search.
 		 String[] IFtoID = new String[3]; 		// 0: Instruction 1: Binary of Instruction 2: PC+4
-		 String[] IDtoEXE = new String[6];		// 0: Instruction 1: opcode 2: rd(dest) 3: A 4: B or imm 5: PC+4
+		 String[] IDtoEXE = new String[7];		// 0: Instruction 1: opcode 2: rd(dest) 3: A 4: B or imm 5: PC+4 6: function for R type
 		 String[] EXEtoMEM = new String[10];	// 0: Instruction
 		 String[] MEMtoWB = new String[10];		// 0: Instruction
 		 
@@ -410,16 +416,71 @@ public class Simulator
 					
 					// EX Stage
 					//TODO: Implement this
+					// - If R type, do function
+					// - If ADDI, do addition
+					// - If LW or SW, do whatever they do
+					// - If BEQ or BNE do 
 					if(count > 1 && IDtoEXE[0] != null)
 					{
-						
+						String exeOP = IDtoEXE[1]; 
+						String exeFunc = IDtoEXE[6];
+						temp = 0;
+						answer = "N/A";
+						location = "N/A";
+						target = "N/A";
+						if(exeOP.equals(_R))
+						{
+							switch (exeFunc)
+							{
+							case ADD:
+								temp = Integer.parseInt(IDtoEXE[3], 2) + Integer.parseInt(IDtoEXE[4], 2);
+								answer = Integer.toBinaryString(temp);
+								break;
+							case SUB:
+								temp = Integer.parseInt(IDtoEXE[3], 2) - Integer.parseInt(IDtoEXE[4], 2);
+								answer = Integer.toBinaryString(temp);
+								break;
+							case AND:
+								temp = Integer.parseInt(IDtoEXE[3], 2) & Integer.parseInt(IDtoEXE[4], 2);
+								answer = Integer.toBinaryString(temp);
+								break;
+							case OR:
+								temp = Integer.parseInt(IDtoEXE[3], 2) | Integer.parseInt(IDtoEXE[4], 2);
+								answer = Integer.toBinaryString(temp);
+								break;
+							case NOR:
+								temp = ~(Integer.parseInt(IDtoEXE[3], 2) | Integer.parseInt(IDtoEXE[4], 2));
+								answer = Integer.toBinaryString(temp);
+								
+								break;
+							case XOR:
+								temp = Integer.parseInt(IDtoEXE[3], 2) ^ Integer.parseInt(IDtoEXE[4], 2);
+								answer = Integer.toBinaryString(temp);
+								break;
+							}
+						}
+						else if(exeOP.equals(ADDI))
+						{
+							temp = Integer.parseInt(IDtoEXE[3], 2) + Integer.parseInt(IDtoEXE[4], 2);
+							answer = Integer.toBinaryString(temp);
+						}
+						else if(exeOP.equals(LW) || exeOP.equals(SW))
+						{
+							
+						}
+						else if(exeOP.equals(BNE) || exeOP.equals(BEQ))
+						{
+							
+						}
 						
 						System.out.println("");
 						System.out.println("  EXtoME REG  ");
 						System.out.println("==============");
-						System.out.println("Result: ");
+						System.out.println("Instruction executed: " + IDtoEXE[0]);
+						System.out.println("Result: " + answer);
 						System.out.println("Value to be stored: " );
 						System.out.println("Register to be loaded from: ");
+						System.out.println("Branch target: " + target);
 					}
 					else
 					{
@@ -482,7 +543,11 @@ public class Simulator
 					
 					// Pipeline Register EXEtoMEM Update
 					// TODO: Add all pipeline info
-					EXEtoMEM[0] = IDtoEXE[0];
+					EXEtoMEM[0] = IDtoEXE[0]; // Instruction
+					EXEtoMEM[1] = IDtoEXE[1]; // OpCode
+					EXEtoMEM[2] = IDtoEXE[2]; // rd
+					EXEtoMEM[3] = answer; // ALU result
+					EXEtoMEM[4] = target; // Branch target
 					
 					
 					// Pipeline Register IDtoEXE Update
@@ -496,6 +561,7 @@ public class Simulator
 						IDtoEXE[3] = Integer.toBinaryString(a); // first operand
 						IDtoEXE[4] = Integer.toBinaryString(b); // second operand
 						IDtoEXE[5] = IFtoID[2]; //PC+4
+						IDtoEXE[6] = func;
 					}
 					else if (regOP.equals(ADDI))
 					{
