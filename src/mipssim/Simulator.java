@@ -14,17 +14,15 @@ import java.util.regex.PatternSyntaxException;
 
 public class Simulator 
 {
-	static String filepath = "src/mipssim/Untitled.txt";
+	static String filepath = "src/mipssim/tv1.txt";
 	
 	//Initial parameters
 	static int numRegisters 	= 	32;
 	int maxNumIns 				= 	256;
-	int maxLabelLength			=	32;
-	int maxNumLabels			=	32;
 	int	maxLineLength			=	256;
 	static int PCPointer 		= 	16384;
-	int memDataStart 			= 	0x1000;
-	int memDataSize 			=	0x1000;
+	int memDataStart 			= 	4096;
+	int memDataSize 			=	4096;
 	int regGP					=	28;
 	int regSP					=	29;
 	int NOP 					= 	-1;
@@ -105,12 +103,16 @@ public class Simulator
 		 String target = "";
 		
 			currentString = s;
-			currentString = currentString.trim();           
+			currentString = currentString.trim();
 			currentString = currentString.replace(",", "");
 			currentString = currentString.replace("$", "");
 			currentString = currentString.replace("r", "");
 			currentString = currentString.replace("R", "");
+			currentString = currentString.replace("0x", "");
+			currentString = currentString.replace("(", " ");
+			currentString = currentString.replace(")", "");
 
+			System.out.println(currentString);
 
 			tempArray = currentString.split("\\s+");
 			switch (tempArray[0])
@@ -119,15 +121,19 @@ public class Simulator
 				// TODO: Make sure immediate is correct, and make sure formatting take "()" into consideration
 				case "lw":
 					tempString = LW;
-					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
+					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
-					immediate = tempArray[3];
+					immediate = String.format("%16s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					ins = LW + rs + rt + immediate;
 					break;
 					
-				// TODO: This
+				// TODO: Make sure immediate is correct, and make sure formatting takes "()" into consideration
 				case "sw":
 					tempString = SW;
+					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
+					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
+					immediate = String.format("%16s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
+					ins = SW + rs + rt + immediate;
 					break;
 				case "add":
 					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
@@ -146,7 +152,7 @@ public class Simulator
 				case "addi":
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
 					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
-					immediate = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
+					immediate = String.format("%16s", Integer.toBinaryString((int)Long.parseLong(tempArray[3], 16))).replace(' ', '0');
 					tempString = ADDI + rs + rt + immediate;
 					ins = tempString;
 					break;
@@ -199,12 +205,13 @@ public class Simulator
 	 public static void main(String[] args)
 	 {
 		 int PC = PCPointer;
+		 String regOP = "";
 		 String decodedIns = "";
-		 String PCSource;
 		 String op = "";
 		 String rs = "";
 		 String rt = "";
 		 String rd = "";
+		 String imm = "";
 		 String shift = "";
 		 String func = "";
 		 int a = 0;
@@ -216,24 +223,25 @@ public class Simulator
 		 
 		 // Change these to HashMap for easy Key,Value search.
 		 String[] IFtoID = new String[3]; 		// 0: Instruction 1: Binary of Instruction 2: PC+4
-		 String[] IDtoEXE = new String[10];		// 0: Instruction 1: rd 2: A 3: B 4: PC+4
+		 String[] IDtoEXE = new String[6];		// 0: Instruction 1: opcode 2: rd(dest) 3: A 4: B or imm 5: PC+4
 		 String[] EXEtoMEM = new String[10];	// 0: Instruction
 		 String[] MEMtoWB = new String[10];		// 0: Instruction
 		 
-		Scanner kbd = new Scanner(System.in);
-		boolean running = true;
-		int cycles = 0;
-		int i = 0;
+		 IFtoID[0] = "";
+		 Scanner kbd = new Scanner(System.in);
+		 boolean running = true;
+		 int cycles = 0;
+		 int i = 0;
 		 
-		try {
-			insArray = loadFile(filepath);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (EOFException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		 try {
+			 insArray = loadFile(filepath);
+		 } catch (FileNotFoundException e) {
+			 e.printStackTrace();
+		 } catch (EOFException e) {
+			 e.printStackTrace();
+		 } catch (IOException e) {
+			 e.printStackTrace();
+		 }
 
 		
 		///////////////
@@ -245,15 +253,16 @@ public class Simulator
 		{
 			
 			cycles = kbd.nextInt();
-			if(i + count <= insArray.size() && IDtoEXE[0] != null && EXEtoMEM[0] != null && MEMtoWB[0] != null)
+			// && (IDtoEXE[0] != null && EXEtoMEM[0] != null && MEMtoWB[0] != null)
+			if(i + count <= insArray.size())
 			{
 				for(i = 0; i < cycles; i++)
 				{
-					System.out.println("");
-					System.out.println("Cycle: " + count);
-					
+					System.out.println("***********");
+					System.out.println("Cycle: " + (count+1));
+					System.out.println("***********");
 					// IF Stage
-					if(insArray.size() > count)
+					if(insArray.size() > count && IFtoID[0] != null)
 					{
 						String s = insArray.get(count);
 						decodedIns = inputToBinary(s);
@@ -267,19 +276,21 @@ public class Simulator
 					}
 					else
 					{
-						IFtoID[0] = null;
+						for(int n =0; n<IFtoID.length; n++)
+						{
+							IFtoID[n] = null;
+						}
 					}
 					
 					// ID Stage
-					// TODO: Implement other instruction types
-					//		- Add control signals
-					if(count > 0 && IFtoID[0] != null)
+					//TODO: Compute target address, and stall pipeline accordingly for branch
+					if((count > 0) && (IFtoID[1] != null))
 					{
 						op = IFtoID[1].substring(0, 6);
-						System.out.println(op);
 						// R-Type
 						if(op.equals(_R))
 						{
+							regOP = _R;
 							RegDst = 1;
 							ALUSrc = 0;
 							MemtoReg = 0;
@@ -297,9 +308,12 @@ public class Simulator
 							int temp2 = Integer.parseInt(rt, 2);
 							a = regFile[temp1];
 							b = regFile[temp2];
+							imm = "";
 						}
 						else if (op.equals(LW))
 						{
+							shift="";
+							func = "";
 							RegDst = 0;
 							ALUSrc = 1;
 							MemtoReg = 1;
@@ -308,9 +322,18 @@ public class Simulator
 							MemWrite = 0;
 							Branch = 0;
 							ALUOp = 0;
+							rs = IFtoID[1].substring(6, 11);
+							rt = IFtoID[1].substring(11,16);
+							imm = IFtoID[1].substring(16, 32);
+							int temp1 = Integer.parseInt(rs, 2);
+							a = regFile[temp1];
+							rd = rt;
+							
 						}
 						else if (op.equals(SW))
 						{
+							shift = "";
+							func = "";
 							RegDst = 0;
 							ALUSrc = 1;
 							MemtoReg = 0;
@@ -319,9 +342,18 @@ public class Simulator
 							MemWrite = 1;
 							Branch = 0;
 							ALUOp = 0;
+							rs = IFtoID[1].substring(6, 11);
+							rt = IFtoID[1].substring(11,16);
+							imm = IFtoID[1].substring(16, 32);
+							int temp1 = Integer.parseInt(rs, 2);
+							a = regFile[temp1];
+							rd = rt;
 						}
 						else if (op.equals(BNE) || op.equals(BEQ))
 						{
+							rd = "";
+							shift = "";
+							func = "";
 							RegDst = 0;
 							ALUSrc = 0;
 							MemtoReg = 0;
@@ -330,6 +362,26 @@ public class Simulator
 							MemWrite = 0;
 							Branch = 1;
 							ALUOp = 01;
+							imm = IFtoID[1].substring(6, 32);
+						}
+						else if(op.equals(ADDI))
+						{
+							shift = "";
+							func = "";
+							RegDst = 0;
+							ALUSrc = 1;
+							MemtoReg = 0;
+							RegWrite = 1;
+							MemRead = 0;
+							MemWrite = 0;
+							Branch = 0;
+							ALUOp = 00;
+							rs = IFtoID[1].substring(6, 11);
+							rt = IFtoID[1].substring(11, 16);
+							imm = IFtoID[1].substring(16, 32);
+							int temp1 = Integer.parseInt(rs, 2);
+							a = regFile[temp1];
+							rd = rt;
 						}
 						
 						System.out.println("");
@@ -338,9 +390,10 @@ public class Simulator
 						System.out.println("Instruction Decoded: " + insArray.get(count-1));
 						System.out.println("Value at rs: " + a);
 						System.out.println("Value at rt: " + b);
-						System.out.println("rd: " + rd);
-						System.out.println("shift: " + shift);
-						System.out.println("func: " + func);
+						System.out.println("Destination Register: " + rd);
+						System.out.println("Immediate: " + imm);
+						System.out.println("Shift Ammount: " + shift);
+						System.out.println("Function Code: " + func);
 						
 					}
 					else
@@ -348,40 +401,62 @@ public class Simulator
 						System.out.println("");
 						System.out.println("  IDtoEX REG  ");
 						System.out.println("==============");
-						System.out.println("Instruction Decoded: NOP");
-						IDtoEXE[0] = null;
+						System.out.println("NOP");
+						for(int n =0; n<IDtoEXE.length; n++)
+						{
+							IDtoEXE[n] = null;
+						}
 					}
+					
 					// EX Stage
 					//TODO: Implement this
 					if(count > 1 && IDtoEXE[0] != null)
 					{
+						
+						
 						System.out.println("");
 						System.out.println("  EXtoME REG  ");
 						System.out.println("==============");
-						//System.out.println("Instruction Decoded: " + decodedIns);
+						System.out.println("Result: ");
+						System.out.println("Value to be stored: " );
+						System.out.println("Register to be loaded from: ");
 					}
 					else
 					{
 						EXEtoMEM[0] = null;
+						System.out.println("");
+						System.out.println("  EXEtoMEM REG  ");
+						System.out.println("=================");
+						System.out.println("NOP");
+						for(int n =0; n<EXEtoMEM.length; n++)
+						{
+							EXEtoMEM[n] = null;
+						}
 					}
+					
 					// MEM Stage 
 					// TODO: Implement this
 					if(count > 2 && EXEtoMEM[0] != null)
 					{
 						
 						System.out.println("");
-						System.out.println("  MEtoWB REG  ");
-						System.out.println("==============");
+						System.out.println("  MEMtoWB REG  ");
+						System.out.println("===============");
 						//System.out.println("Instruction Decoded: " + decodedIns);
 					}
 					else
 					{
 						MEMtoWB[0] = null;
 						System.out.println("");
-						System.out.println("  MEtoWB REG  ");
-						System.out.println("==============");
+						System.out.println("  MEMtoWB REG  ");
+						System.out.println("===============");
 						System.out.println("NOP");
+						for(int n =0; n<MEMtoWB.length; n++)
+						{
+							MEMtoWB[n] = null;
+						}
 					}
+					
 					// WB Stage
 					// TODO: Implement this
 					if(count > 3)
@@ -394,7 +469,10 @@ public class Simulator
 					}
 					else
 					{
-						
+						System.out.println("");
+						System.out.println("  WB STAGE  ");
+						System.out.println("============");
+						System.out.println("NOP");
 					}
 					
 					//Pipeline Register MEMtoWB Update
@@ -410,18 +488,47 @@ public class Simulator
 					// Pipeline Register IDtoEXE Update
 					// TODO: Check if all this is correct
 					//		- Add control signals
-					IDtoEXE[0] = IFtoID[0];
-					IDtoEXE[1] = rd;
-					IDtoEXE[2] = Integer.toBinaryString(a);
-					IDtoEXE[3] = Integer.toBinaryString(b);
-					IDtoEXE[4] = IFtoID[2];
-					
+					if(regOP.equals(_R))
+					{
+						IDtoEXE[0] = IFtoID[0]; //Instruction
+						IDtoEXE[1] = op; // op-code for instruction
+						IDtoEXE[2] = rd; // Destination register for add
+						IDtoEXE[3] = Integer.toBinaryString(a); // first operand
+						IDtoEXE[4] = Integer.toBinaryString(b); // second operand
+						IDtoEXE[5] = IFtoID[2]; //PC+4
+					}
+					else if (regOP.equals(ADDI))
+					{
+						IDtoEXE[0] = IFtoID[0]; // Instruction
+						IDtoEXE[1] = op; // opcode of instruction
+						IDtoEXE[2] = rd; // Destination register number of Add
+						IDtoEXE[3] = Integer.toBinaryString(a); // first operand
+						IDtoEXE[4] = imm; // Immediate to be added
+						IDtoEXE[5] = IFtoID[2]; // PC+4
+					}
+					else if(regOP.equals(LW) || regOP.equals(SW))
+					{
+						IDtoEXE[0] = IFtoID[0]; // Instruction
+						IDtoEXE[1] = op; // opcode of instruction
+						IDtoEXE[2] = rd; // Destination of loaded value
+						IDtoEXE[3] = Integer.toBinaryString(a); // Register to load from/store to
+						IDtoEXE[4] = imm; // Immediate for load/store
+						IDtoEXE[5] = IFtoID[2]; // PC+4
+					}
+					else if(regOP.equals(BNE) || regOP.equals(BEQ))
+					{
+						IDtoEXE[0] = IFtoID[0]; // Instruction
+						IDtoEXE[1] = op; // opcode
+						IDtoEXE[2] = ""; // No rd for branch
+						IDtoEXE[3] = ""; // No a for branch
+						IDtoEXE[4] = imm; // address for branch
+						IDtoEXE[5] = IFtoID[2]; //PC+4
+					}
 					
 					
 					// Pipeline Register IFtoID Update
 					PC+=4;
 					IFtoID[0] = insArray.get(count);
-					//System.out.println("IF_ID = " + IFtoID[0]);
 					IFtoID[1] = decodedIns;
 					IFtoID[2] = Integer.toString(PC);
 					
@@ -429,6 +536,7 @@ public class Simulator
 					
 					
 					count++;
+					System.out.println("#############################################");
 				}
 			}
 			else
@@ -438,6 +546,5 @@ public class Simulator
 				System.out.println("==================");
 			}
 		}
-	}
-	 
+	} 
 }
