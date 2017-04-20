@@ -161,12 +161,14 @@ public class Simulator
 				case "bne":
 					immediate = String.format("%26s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
 					tempString = BNE + immediate;
+					ins = tempString;
 					break;
 					
 					// TODO: Make sure immediate is correct
 				case "beq":
 					immediate = String.format("%26s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
 					tempString = BEQ + immediate;
+					ins = tempString;
 					break;
 				case "and":
 					rd = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
@@ -267,6 +269,7 @@ public class Simulator
 					System.out.println("***********");
 					System.out.println("Cycle: " + (count+1));
 					System.out.println("***********");
+					
 					// IF Stage
 					if(insArray.size() > count && IFtoID[0] != null)
 					{
@@ -290,21 +293,14 @@ public class Simulator
 					
 					// ID Stage
 					//TODO: Compute target address, and stall pipeline accordingly for branch
-					if((count > 0) && (IFtoID[1] != null))
+					if((count > 0) && (IFtoID[0] != null))
 					{
 						op = IFtoID[1].substring(0, 6);
+						System.out.println(op);
 						// R-Type
 						if(op.equals(_R))
 						{
 							regOP = _R;
-							RegDst = 1;
-							ALUSrc = 0;
-							MemtoReg = 0;
-							RegWrite = 1;
-							MemRead = 0;
-							MemWrite = 0;
-							Branch = 0;
-							ALUOp = 10;
 							rs = IFtoID[1].substring(6, 11);
 							rt = IFtoID[1].substring(11, 16);
 							rd = IFtoID[1].substring(16, 21);
@@ -318,16 +314,9 @@ public class Simulator
 						}
 						else if (op.equals(LW))
 						{
+							regOP = LW;
 							shift="";
 							func = "";
-							RegDst = 0;
-							ALUSrc = 1;
-							MemtoReg = 1;
-							RegWrite = 1;
-							MemRead = 1;
-							MemWrite = 0;
-							Branch = 0;
-							ALUOp = 0;
 							rs = IFtoID[1].substring(6, 11);
 							rt = IFtoID[1].substring(11,16);
 							imm = IFtoID[1].substring(16, 32);
@@ -338,16 +327,9 @@ public class Simulator
 						}
 						else if (op.equals(SW))
 						{
+							regOP = SW;
 							shift = "";
 							func = "";
-							RegDst = 0;
-							ALUSrc = 1;
-							MemtoReg = 0;
-							RegWrite = 0;
-							MemRead = 0;
-							MemWrite = 1;
-							Branch = 0;
-							ALUOp = 0;
 							rs = IFtoID[1].substring(6, 11);
 							rt = IFtoID[1].substring(11,16);
 							imm = IFtoID[1].substring(16, 32);
@@ -357,31 +339,18 @@ public class Simulator
 						}
 						else if (op.equals(BNE) || op.equals(BEQ))
 						{
+							regOP = BNE;
 							rd = "";
 							shift = "";
 							func = "";
-							RegDst = 0;
-							ALUSrc = 0;
-							MemtoReg = 0;
-							RegWrite = 1;
-							MemRead = 0;
-							MemWrite = 0;
-							Branch = 1;
-							ALUOp = 01;
-							imm = IFtoID[1].substring(6, 32);
+							imm = IFtoID[1].substring(16, 32);
+							imm = String.format("%32s", Integer.toBinaryString(Integer.parseInt(imm, 2))).replace(' ', '0');
 						}
 						else if(op.equals(ADDI))
 						{
+							regOP = ADDI;
 							shift = "";
 							func = "";
-							RegDst = 0;
-							ALUSrc = 1;
-							MemtoReg = 0;
-							RegWrite = 1;
-							MemRead = 0;
-							MemWrite = 0;
-							Branch = 0;
-							ALUOp = 00;
 							rs = IFtoID[1].substring(6, 11);
 							rt = IFtoID[1].substring(11, 16);
 							imm = IFtoID[1].substring(16, 32);
@@ -400,7 +369,7 @@ public class Simulator
 						System.out.println("Immediate: " + imm);
 						System.out.println("Shift Ammount: " + shift);
 						System.out.println("Function Code: " + func);
-						
+						System.out.println("op: " + op);
 					}
 					else
 					{
@@ -410,6 +379,7 @@ public class Simulator
 						System.out.println("NOP");
 						for(int n =0; n<IDtoEXE.length; n++)
 						{
+							System.out.println("Surprise");
 							IDtoEXE[n] = null;
 						}
 					}
@@ -470,7 +440,9 @@ public class Simulator
 						}
 						else if(exeOP.equals(BNE) || exeOP.equals(BEQ))
 						{
-							
+							temp = Integer.parseInt(IDtoEXE[4],2) << 2;
+							target = Integer.toBinaryString(temp);
+							target = String.format("%32s", target).replace(' ', '0');
 						}
 						
 						System.out.println("");
