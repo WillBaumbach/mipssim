@@ -25,9 +25,10 @@ public class Simulator
 	static int memDataSize 			=	4096;
 	int regGP					=	28;
 	int regSP					=	29;
-	int NOP 					= 	-1;
+
 	
 	// OpCode + Function
+	static final String NOP = 	"000000";
 	static final String _R 	= 	"000000";
 	static final String LW 	= 	"100011";
 	static final String SW 	= 	"101011";
@@ -205,6 +206,7 @@ public class Simulator
 	 
 	 public static void main(String[] args)
 	 {
+		 String s = "";
 		 int PC = PCPointer;
 		 String regOP = "";
 		 String decodedIns = "";
@@ -266,21 +268,24 @@ public class Simulator
 		{
 			
 			cycles = kbd.nextInt();
-			// && (IDtoEXE[0] != null && EXEtoMEM[0] != null && MEMtoWB[0] != null)
-			System.out.println(IFtoID[0]);
-			if(i + count <= insArray.size() && (IFtoID[0] != null || IDtoEXE[0] != null || EXEtoMEM[0] != null || MEMtoWB[0] != null))
+			if(i + count <= insArray.size() + 4 && (IFtoID[0] != null || IDtoEXE[0] != null || EXEtoMEM[0] != null || MEMtoWB[0] != null))
 			{
 				for(i = 0; i < cycles; i++)
 				{
 					System.out.println("***********");
-					System.out.println("Cycle: " + (count+1));
+					System.out.println(" Cycle: " + (count+1));
 					System.out.println("***********");
+					
+					s = "";
+					decodedIns = "";
 					
 					// IF Stage
 					if(insArray.size() > count && IFtoID[0] != null)
 					{
-						String s = insArray.get(count);
+						
+						s = insArray.get(count);
 						decodedIns = inputToBinary(s);
+						
 						
 						System.out.println("");
 						System.out.println("  IFtoID REG  ");
@@ -291,9 +296,16 @@ public class Simulator
 					}
 					else
 					{
+						s = "NOP";
+						decodedIns = "00000000000000000000000000000000";
+						
+						System.out.println("");
+						System.out.println("  IFtoID REG  ");
+						System.out.println("==============");
+						System.out.println("NOP");
 						for(int n =0; n<IFtoID.length; n++)
 						{
-							IFtoID[n] = null;
+							//IFtoID[n] = null;
 						}
 					}
 					
@@ -377,7 +389,7 @@ public class Simulator
 						System.out.println("");
 						System.out.println("  IDtoEX REG  ");
 						System.out.println("==============");
-						System.out.println("Instruction Decoded: " + insArray.get(count-1));
+						System.out.println("Instruction Decoded: " + IFtoID[0]);
 						System.out.println("Value at rs: " + a);
 						System.out.println("Value at rt: " + b);
 						System.out.println("Destination Register: " + rd);
@@ -388,6 +400,13 @@ public class Simulator
 					}
 					else
 					{
+						
+						rs = "";
+						rt = "";
+						rd = "";
+						shift = "";
+						func = "";
+						
 						System.out.println("");
 						System.out.println("  IDtoEX REG  ");
 						System.out.println("==============");
@@ -557,7 +576,7 @@ public class Simulator
 						System.out.println("");
 						System.out.println("  WB STAGE  ");
 						System.out.println("============");
-						System.out.println("Instruction Decoded: " + MEMtoWB[0]);
+						System.out.println("Instruction: " + MEMtoWB[0]);
 						System.out.println("Register Number: "  + MEMtoWB[2]);
 						System.out.println("Value: " + MEMtoWB[3]);
 					}
@@ -588,10 +607,6 @@ public class Simulator
 					{
 						// Nothing else I think
 					}
-					for(int n =0; n<EXEtoMEM.length; n++)
-					{
-						EXEtoMEM[n] = null;
-					}
 					
 					
 					// Pipeline Register EXEtoMEM Update
@@ -605,11 +620,7 @@ public class Simulator
 					EXEtoMEM[6] = store; // value to store
 					EXEtoMEM[7] = load; // load location
 					
-					for(int n =0; n<IDtoEXE.length; n++)
-					{
-						IDtoEXE[n] = null;
-					}
-					
+
 					// Pipeline Register IDtoEXE Update
 					// TODO: Check if all this is correct
 					//		- Add control signals
@@ -651,18 +662,14 @@ public class Simulator
 						IDtoEXE[5] = IFtoID[2]; //PC+4
 					}
 					
-					for(int n =0; n<IFtoID.length; n++)
-					{
-						IFtoID[n] = null;
-					}
-					System.out.println(IFtoID[0]);
-					
 					// Pipeline Register IFtoID Update
-					PC+=4;
-					IFtoID[0] = insArray.get(count);
-					IFtoID[1] = decodedIns;
-					IFtoID[2] = Integer.toString(PC);
-					
+					if(insArray.size() > count)
+					{
+						PC+=4;
+						IFtoID[0] = s;
+						IFtoID[1] = decodedIns;
+						IFtoID[2] = Integer.toString(PC);
+					}
 					
 					
 					
