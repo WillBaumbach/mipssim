@@ -1,2 +1,7 @@
-addi $3, $3, 100
-sub $4, $12, $1
+addi $3, $3, 0x1
+addi $4, $12, 0
+nop
+nop
+nop
+beq $3, $4, 1
+add $6, $7, $7

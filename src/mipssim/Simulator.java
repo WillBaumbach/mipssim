@@ -13,7 +13,7 @@ import java.util.regex.PatternSyntaxException;
 
 public class Simulator 
 {
-	static String filepath = "src/mipssim/tv1.txt";
+	static String filepath = "src/mipssim/Untitled.txt";
 	
 	//Initial parameters
 	static int numRegisters 	= 	32;
@@ -158,15 +158,19 @@ public class Simulator
 					
 					// TODO: Make sure immediate is correct
 				case "bne":
-					immediate = String.format("%26s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
-					tempString = BNE + immediate;
+					immediate = String.format("%16s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
+					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
+					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
+					tempString = BNE + rs + rt + immediate;
 					ins = tempString;
 					break;
 					
 					// TODO: Make sure immediate is correct
 				case "beq":
-					immediate = String.format("%26s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
-					tempString = BEQ + immediate;
+					immediate = String.format("%16s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
+					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
+					rt = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[2]))).replace(' ', '0');
+					tempString = BEQ + rs + rt + immediate;
 					ins = tempString;
 					break;
 				case "and":
@@ -204,7 +208,7 @@ public class Simulator
 	 
 	 
 	 public static void main(String[] args)
-	 {
+	 {		 
 		 String s = "";
 		 int PC = PCPointer;
 		 String regOP = "";
@@ -263,6 +267,8 @@ public class Simulator
 		///////////////
 		
 		int count = 0;
+		int cyclecount = 1;
+		
 		while(running)
 		{
 			//System.out.println(IFtoID[0]);
@@ -271,22 +277,23 @@ public class Simulator
 			//System.out.println(MEMtoWB[0]);
 			
 			
-			if(i + count <= (insArray.size() + 5) && (!(IFtoID[0].equals("NOP")) || !(IDtoEXE[0].equals("NOP")) || !(EXEtoMEM[0].equals("NOP")) || !(MEMtoWB[0].equals("NOP"))))
+			if(count <= (insArray.size() + 5) && (!(IFtoID[0].equals("NOP")) || !(IDtoEXE[0].equals("NOP")) || !(EXEtoMEM[0].equals("NOP")) || !(MEMtoWB[0].equals("NOP"))))
 			{
 				cycles = kbd.nextInt();
 				for(i = 0; i < cycles; i++)
 				{
 					System.out.println("***********");
-					System.out.println(" Cycle: " + (count+1));
+					System.out.println(" Cycle: " + (cyclecount));
 					System.out.println("***********");
 					
 					s = "";
 					decodedIns = "";
 					
 					// IF Stage
-					if(insArray.size() > count && IFtoID[0] != null && !insArray.get(count).equals("nop"))
+					if(insArray.size() > count && IFtoID[0] != null && !insArray.get(count).equals("nop") && !stall)
 					{
 						s = insArray.get(count);
+						System.out.println(s);
 						decodedIns = inputToBinary(s);
 						
 						
@@ -309,8 +316,6 @@ public class Simulator
 					}
 					
 					// ID Stage
-					//TODO: Compute target address, and stall pipeline accordingly for branch
-					// - Need to determine how branches work
 					a = 0;
 					b = 0;
 					rd = "";
@@ -370,13 +375,29 @@ public class Simulator
 							func = "";
 							imm = IFtoID[1].substring(16, 32);
 							imm = String.format("%32s", Integer.toBinaryString(Integer.parseInt(imm, 2))).replace(' ', '0');
+							rs = IFtoID[1].substring(6, 11);
+							rt = IFtoID[1].substring(11, 16);
+							int temp1 = Integer.parseInt(rs, 2);
+							int temp2 = Integer.parseInt(rt, 2);
+							System.out.println("rs: " + temp1);
+							a = regFile[temp1];
+							b = regFile[temp2];
+							
+							if(op.equals(BNE) && a!=b)
+							{
+								stall = true;
+							}
+							else if(op.equals(BEQ) && a==b)
+							{
+								stall = true;
+							}
 						}
 						else if(op.equals(ADDI))
 						{
 							regOP = ADDI;
 							shift = "";
 							func = "";
-							rs = IFtoID[1].substring(6, 11);
+							rs =IFtoID[1].substring(6, 11);
 							rt = IFtoID[1].substring(11, 16);
 							imm = IFtoID[1].substring(16, 32);
 							int temp1 = Integer.parseInt(rs, 2);
@@ -387,8 +408,8 @@ public class Simulator
 						System.out.println("  IDtoEX REG  ");
 						System.out.println("==============");
 						System.out.println("Instruction Decoded: " + IFtoID[0]);
-						System.out.println("Value at rs: " + a);
-						System.out.println("Value at rt: " + b);
+						System.out.println("Value at rs: " + Integer.toBinaryString(a));
+						System.out.println("Value at rt: " + Integer.toBinaryString(b));
 						System.out.println("Destination Register: " + rd);
 						System.out.println("Immediate: " + imm);
 						System.out.println("Shift Ammount: " + shift);
@@ -413,11 +434,6 @@ public class Simulator
 					}
 					
 					// EX Stage
-					//TODO: Implement this
-					// - I think R type is all finished
-					// - I think ADDI is all finished
-					// - I think LW is all finished 
-					// - Need to determine how branches work
 					if(count > 1 && !(IDtoEXE[0].equals("NOP")))
 					{
 						String exeOP = IDtoEXE[1]; 
@@ -485,10 +501,29 @@ public class Simulator
 						}
 						else if(exeOP.equals(BNE) || exeOP.equals(BEQ))
 						{
-							temp = Integer.parseInt(IDtoEXE[4],2) << 2;
-							target = Integer.toBinaryString(temp);
+							temp = Integer.parseInt(IDtoEXE[5],2) << 2;
+							target = String.format("%16s",Integer.toBinaryString(temp)).replace(" ", "0");
 							char sign = target.substring(0, 1).toCharArray()[0];
 							target = String.format("%32s", target).replace(' ', sign);
+							String t = IDtoEXE[6];
+							target = Integer.toBinaryString(Integer.parseInt(t, 10) + Integer.parseInt(target, 2)); // PC+4 + offset
+							
+							System.out.println("rs: " + IDtoEXE[3]);
+							System.out.println("rt: " + IDtoEXE[4]);
+							
+							if(IDtoEXE[3].equals(IDtoEXE[4]) && exeOP.equals(BEQ))
+							{
+								count = Integer.parseInt(IDtoEXE[5]) - 2;
+								PC = Integer.parseInt(target, 2);
+								stall = false;
+								
+							}
+							else if(!(IDtoEXE[3].equals(IDtoEXE[4])) && exeOP.equals(BNE))
+							{
+								count = Integer.parseInt(IDtoEXE[5]) - 2;
+								PC = Integer.parseInt(target, 2);
+								stall = false;
+							}
 						}
 						
 						System.out.println("");
@@ -531,11 +566,11 @@ public class Simulator
 						}
 						else if(memOP.equals(BNE) || memOP.equals(BEQ))
 						{
-							// Not sure
+							// Do nothing
 						}
 						else if(memOP.equals(ADDI))
 						{
-							// Do nothing?
+							// Do nothing
 						}
 						
 						System.out.println("");
@@ -554,7 +589,6 @@ public class Simulator
 					}
 					
 					// WB Stage
-					// TODO: Implement this
 					if(count > 3 && !(MEMtoWB[0].equals("NOP")))
 					{
 						
@@ -564,6 +598,10 @@ public class Simulator
 						System.out.println("Instruction: " + MEMtoWB[0]);
 						System.out.println("Register Number: "  + MEMtoWB[2]);
 						System.out.println("Value: " + MEMtoWB[3]);
+						
+						regFile[Integer.parseInt(MEMtoWB[2], 2)] = Integer.parseInt(MEMtoWB[3], 2);
+						System.out.print(regFile[3]);
+						
 					}
 					else
 					{
@@ -574,7 +612,6 @@ public class Simulator
 					}
 					
 					//Pipeline Register MEMtoWB Update
-					// TODO: Add all register info
 					MEMtoWB[0] = EXEtoMEM[0]; // Instruction
 					MEMtoWB[1] = EXEtoMEM[1]; // Op-Code
 					MEMtoWB[5] = EXEtoMEM[5]; // PC+4
@@ -593,9 +630,7 @@ public class Simulator
 						// Nothing else I think
 					}
 					
-					
-					// Pipeline Register EXEtoMEM Update
-					// TODO: Add all pipeline info
+					// Pipeline register EXEtoMEM update
 					EXEtoMEM[0] = IDtoEXE[0]; // Instruction
 					EXEtoMEM[1] = IDtoEXE[1]; // OpCode
 					EXEtoMEM[2] = IDtoEXE[2]; // rd
@@ -607,9 +642,7 @@ public class Simulator
 					
 
 					// Pipeline Register IDtoEXE Update
-					// TODO: Check if all this is correct
-					//		- Add control signals
-					if(regOP.equals(_R))
+					if(regOP.equals(_R) && !stall)
 					{
 						IDtoEXE[0] = IFtoID[0]; //Instruction
 						IDtoEXE[1] = op; // op-code for instruction
@@ -619,7 +652,7 @@ public class Simulator
 						IDtoEXE[5] = IFtoID[2]; //PC+4
 						IDtoEXE[6] = func;
 					}
-					else if (regOP.equals(ADDI))
+					else if ((regOP.equals(ADDI)) && !stall)
 					{
 						IDtoEXE[0] = IFtoID[0]; // Instruction
 						IDtoEXE[1] = op; // opcode of instruction
@@ -628,7 +661,7 @@ public class Simulator
 						IDtoEXE[4] = imm; // Immediate to be added
 						IDtoEXE[5] = IFtoID[2]; // PC+4
 					}
-					else if(regOP.equals(LW) || regOP.equals(SW))
+					else if((regOP.equals(LW) || regOP.equals(SW)) && !stall)
 					{
 						IDtoEXE[0] = IFtoID[0]; // Instruction
 						IDtoEXE[1] = op; // opcode of instruction
@@ -642,9 +675,10 @@ public class Simulator
 						IDtoEXE[0] = IFtoID[0]; // Instruction
 						IDtoEXE[1] = op; // opcode
 						IDtoEXE[2] = ""; // No rd for branch
-						IDtoEXE[3] = ""; // No a for branch
-						IDtoEXE[4] = imm; // address for branch
-						IDtoEXE[5] = IFtoID[2]; //PC+4
+						IDtoEXE[3] = Integer.toBinaryString(a); //rs
+						IDtoEXE[4] = Integer.toBinaryString(b); //rt
+						IDtoEXE[5] = imm; // address for branch
+						IDtoEXE[6] = IFtoID[2]; //PC+4
 					}
 					else
 					{
@@ -654,7 +688,7 @@ public class Simulator
 					// Pipeline Register IFtoID Update
 					if(insArray.size() + 5 > count)
 					{
-						if(s.equals("NOP"))
+						if(s.equals("NOP") || stall)
 						{
 							IFtoID[0] = "NOP";
 							IFtoID[1] = null;
@@ -670,6 +704,7 @@ public class Simulator
 							IFtoID[2] = Integer.toString(PC);
 						}
 					}
+					cyclecount++;
 					count++;
 					System.out.println("#############################################");
 				}
