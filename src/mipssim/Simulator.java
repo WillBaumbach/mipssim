@@ -1,6 +1,5 @@
 package mipssim;
 
-import java.awt.List;
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.FileInputStream;
@@ -14,7 +13,7 @@ import java.util.regex.PatternSyntaxException;
 
 public class Simulator 
 {
-	static String filepath = "src/mipssim/Untitled.txt";
+	static String filepath = "src/mipssim/tv1.txt";
 	
 	//Initial parameters
 	static int numRegisters 	= 	32;
@@ -266,10 +265,15 @@ public class Simulator
 		int count = 0;
 		while(running)
 		{
+			//System.out.println(IFtoID[0]);
+			//System.out.println(IDtoEXE[0]);
+			//System.out.println(EXEtoMEM[0]);
+			//System.out.println(MEMtoWB[0]);
 			
-			cycles = kbd.nextInt();
-			if(i + count <= insArray.size() + 4 && (IFtoID[0] != null || IDtoEXE[0] != null || EXEtoMEM[0] != null || MEMtoWB[0] != null))
+			
+			if(i + count <= (insArray.size() + 5) && (!(IFtoID[0].equals("NOP")) || !(IDtoEXE[0].equals("NOP")) || !(EXEtoMEM[0].equals("NOP")) || !(MEMtoWB[0].equals("NOP"))))
 			{
+				cycles = kbd.nextInt();
 				for(i = 0; i < cycles; i++)
 				{
 					System.out.println("***********");
@@ -280,9 +284,8 @@ public class Simulator
 					decodedIns = "";
 					
 					// IF Stage
-					if(insArray.size() > count && IFtoID[0] != null)
+					if(insArray.size() > count && IFtoID[0] != null && !insArray.get(count).equals("nop"))
 					{
-						
 						s = insArray.get(count);
 						decodedIns = inputToBinary(s);
 						
@@ -297,16 +300,12 @@ public class Simulator
 					else
 					{
 						s = "NOP";
-						decodedIns = "00000000000000000000000000000000";
+						decodedIns = null;
 						
 						System.out.println("");
 						System.out.println("  IFtoID REG  ");
 						System.out.println("==============");
 						System.out.println("NOP");
-						for(int n =0; n<IFtoID.length; n++)
-						{
-							//IFtoID[n] = null;
-						}
 					}
 					
 					// ID Stage
@@ -319,12 +318,10 @@ public class Simulator
 					shift = "";
 					func = "";
 					op = "";
-					if((count > 0) && (IFtoID[0] != null))
+					if((count > 0) && !(IFtoID[0].equals("NOP")))
 					{
-						
-						
 						op = IFtoID[1].substring(0, 6);
-						System.out.println(op);
+						// System.out.println(op);
 						// R-Type
 						if(op.equals(_R))
 						{
@@ -396,25 +393,23 @@ public class Simulator
 						System.out.println("Immediate: " + imm);
 						System.out.println("Shift Ammount: " + shift);
 						System.out.println("Function Code: " + func);
-						System.out.println("op: " + op);
+						// System.out.println("op: " + op);
 					}
 					else
 					{
-						
-						rs = "";
-						rt = "";
-						rd = "";
-						shift = "";
-						func = "";
+						regOP = "";
+						rs = null;
+						rt = null;
+						a = 0;
+						b = 0;
+						rd = null;
+						shift = null;
+						func = null;
 						
 						System.out.println("");
 						System.out.println("  IDtoEX REG  ");
 						System.out.println("==============");
 						System.out.println("NOP");
-						for(int n =0; n<IDtoEXE.length; n++)
-						{
-							IDtoEXE[n] = null;
-						}
 					}
 					
 					// EX Stage
@@ -423,7 +418,7 @@ public class Simulator
 					// - I think ADDI is all finished
 					// - I think LW is all finished 
 					// - Need to determine how branches work
-					if(count > 1 && IDtoEXE[0] != null)
+					if(count > 1 && !(IDtoEXE[0].equals("NOP")))
 					{
 						String exeOP = IDtoEXE[1]; 
 						String exeFunc = IDtoEXE[6];
@@ -507,19 +502,14 @@ public class Simulator
 					}
 					else
 					{
-						EXEtoMEM[0] = null;
 						System.out.println("");
 						System.out.println("  EXEtoMEM REG  ");
 						System.out.println("=================");
 						System.out.println("NOP");
-						for(int n =0; n<EXEtoMEM.length; n++)
-						{
-							EXEtoMEM[n] = null;
-						}
 					}
 					
 					// MEM Stage 
-					if(count > 2 && EXEtoMEM[0] != null)
+					if(count > 2 && !(EXEtoMEM[0].equals("NOP")))
 					{
 						ilocation = 0;
 						iresult = 0;
@@ -557,20 +547,15 @@ public class Simulator
 					}
 					else
 					{
-						MEMtoWB[0] = null;
 						System.out.println("");
 						System.out.println("  MEMtoWB REG  ");
 						System.out.println("===============");
 						System.out.println("NOP");
-						for(int n =0; n<MEMtoWB.length; n++)
-						{
-							MEMtoWB[n] = null;
-						}
 					}
 					
 					// WB Stage
 					// TODO: Implement this
-					if(count > 3 && MEMtoWB[0] != null)
+					if(count > 3 && !(MEMtoWB[0].equals("NOP")))
 					{
 						
 						System.out.println("");
@@ -661,18 +646,30 @@ public class Simulator
 						IDtoEXE[4] = imm; // address for branch
 						IDtoEXE[5] = IFtoID[2]; //PC+4
 					}
-					
-					// Pipeline Register IFtoID Update
-					if(insArray.size() > count)
+					else
 					{
-						PC+=4;
-						IFtoID[0] = s;
-						IFtoID[1] = decodedIns;
-						IFtoID[2] = Integer.toString(PC);
+						IDtoEXE[0] = "NOP";
 					}
 					
-					
-					
+					// Pipeline Register IFtoID Update
+					if(insArray.size() + 5 > count)
+					{
+						if(s.equals("NOP"))
+						{
+							IFtoID[0] = "NOP";
+							IFtoID[1] = null;
+							IFtoID[2] = null;
+						}
+						else
+						{
+							//System.out.println("s: " + s);
+							//System.out.println("decodedIns: " + decodedIns);
+							PC+=4;
+							IFtoID[0] = s;
+							IFtoID[1] = decodedIns;
+							IFtoID[2] = Integer.toString(PC);
+						}
+					}
 					count++;
 					System.out.println("#############################################");
 				}
