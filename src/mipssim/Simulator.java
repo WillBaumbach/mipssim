@@ -13,7 +13,7 @@ import java.util.regex.PatternSyntaxException;
 
 public class Simulator 
 {
-	static String filepath = "src/mipssim/Untitled.txt";
+	static String filepath = "src/mipssim/tv1.txt";
 	
 	//Initial parameters
 	static int numRegisters 	= 	32;
@@ -21,7 +21,7 @@ public class Simulator
 	int	maxLineLength			=	256;
 	static int PCPointer 		= 	16384;
 	int memDataStart 			= 	4096;
-	static int memDataSize 			=	4096;
+	static int memDataSize 		=	4096;
 	int regGP					=	28;
 	int regSP					=	29;
 
@@ -57,7 +57,7 @@ public class Simulator
 	static int rd = -1;
 	int i = 0;
 	int addr = 0;
-	static int[] regFile = new int[numRegisters];
+	static int[] regFile = new int[numRegisters - 1];
 	static int[] dataMem = new int[memDataSize/4];
 	static ArrayList<String> insArray = new ArrayList<String>();
 	static String instruction = null;
@@ -209,6 +209,9 @@ public class Simulator
 	 
 	 public static void main(String[] args)
 	 {		 
+		 String forward = "";
+		 boolean isforward = false;
+		 
 		 String s = "";
 		 int PC = PCPointer;
 		 String regOP = "";
@@ -240,11 +243,14 @@ public class Simulator
 		 
 		 // Change these to HashMap for easy Key,Value search.
 		 String[] IFtoID = new String[3]; 		// 0: Instruction 1: Binary of Instruction 2: PC+4
-		 String[] IDtoEXE = new String[7];		// 0: Instruction 1: opcode 2: rd(dest) 3: A 4: B or imm 5: PC+4 6: function for R type
-		 String[] EXEtoMEM = new String[10];	// 0: Instruction
-		 String[] MEMtoWB = new String[10];		// 0: Instruction
+		 String[] IDtoEXE = new String[9];		// 0: Instruction 1: opcode 2: rd(dest) 3: A 4: B or imm 5: PC+4 6: function for R type
+		 String[] EXEtoMEM = new String[8];	// 0: Instruction
+		 String[] MEMtoWB = new String[5];		// 0: Instruction
 		 
-		 IFtoID[0] = "x";
+		 IFtoID[0] = "";
+		 IDtoEXE[0] = "NOP";
+		 EXEtoMEM[0] = "NOP";
+		 MEMtoWB[0] = "NOP";
 		 @SuppressWarnings("resource")
 		 Scanner kbd = new Scanner(System.in);
 		 boolean running = true;
@@ -282,6 +288,75 @@ public class Simulator
 				cycles = kbd.nextInt();
 				for(i = 0; i < cycles; i++)
 				{
+					// Forwarding Logic
+					if(!EXEtoMEM[0].equals("NOP") && !IDtoEXE[0].equals("NOP"))
+					{
+						System.out.println(EXEtoMEM[0]);
+						System.out.println(EXEtoMEM[2]);
+						System.out.println(EXEtoMEM[3]);
+						System.out.println(IDtoEXE[7]);
+						if(!EXEtoMEM[0].contains("sw") && EXEtoMEM[2].equals(IDtoEXE[7]) && !EXEtoMEM[3].equals("N/A"))
+						{
+							if(EXEtoMEM[1].equals("100011")) 
+							{
+								iresult = dataMem[Integer.parseInt(EXEtoMEM[7], 2)];
+								result = Integer.toBinaryString(iresult);
+								IDtoEXE[3] = result;
+
+							}
+							else
+							{
+								
+								IDtoEXE[3] = EXEtoMEM[3];
+
+							}
+						}
+						if(!EXEtoMEM[0].contains("sw") && EXEtoMEM[2].equals(IDtoEXE[8]) && !EXEtoMEM[3].equals("N/A"))
+						{
+							if(EXEtoMEM[1].equals("100011"))
+							{
+								iresult = dataMem[Integer.parseInt(EXEtoMEM[7], 2)];
+								result = Integer.toBinaryString(iresult);
+								IDtoEXE[4] = result;
+
+							}
+							else
+							{
+								IDtoEXE[4] = EXEtoMEM[3];
+
+							}
+						}
+					}
+					//!EXEtoMEM[0].equals("NOP") 
+					if(!IDtoEXE[0].equals("NOP") && !MEMtoWB[0].equals("NOP"))
+					{
+						if(!MEMtoWB[0].contains("sw") && MEMtoWB[2].equals(IDtoEXE[7]))
+						{
+							if(!EXEtoMEM[2].equals(IDtoEXE[7]) || EXEtoMEM[0].contains("sw"))
+							{
+								IDtoEXE[3] = MEMtoWB[3];
+
+							}
+						}
+						if(!MEMtoWB[0].contains("sw") && MEMtoWB[2].equals(IDtoEXE[8]))
+						{
+							if(!EXEtoMEM[2].equals(IDtoEXE[8]) || EXEtoMEM[0].contains("sw"))
+							{
+								IDtoEXE[4] = MEMtoWB[3];
+
+							}
+						}
+						if(!MEMtoWB[0].contains("sw") && MEMtoWB[2].equals(IDtoEXE[7]))
+						{
+							if(!EXEtoMEM[2].equals(IDtoEXE[7]) || EXEtoMEM[0].contains("sw"))
+							{
+								IDtoEXE[3] = MEMtoWB[3];
+
+							}
+						}
+					}
+					
+					
 					System.out.println("***********");
 					System.out.println(" Cycle: " + (cyclecount));
 					System.out.println("***********");
@@ -348,11 +423,10 @@ public class Simulator
 							shift="";
 							func = "";
 							rs = IFtoID[1].substring(6, 11);
-							rt = IFtoID[1].substring(11,16);
+							rd = IFtoID[1].substring(11,16);
 							imm = IFtoID[1].substring(16, 32);
 							int temp1 = Integer.parseInt(rs, 2);
 							a = temp1 * 32 - 1;
-							rd = rt;
 							
 						}
 						else if (op.equals(SW))
@@ -361,11 +435,10 @@ public class Simulator
 							shift = "";
 							func = "";
 							rs = IFtoID[1].substring(6, 11);
-							rt = IFtoID[1].substring(11,16);
+							rd = IFtoID[1].substring(11,16);
 							imm = IFtoID[1].substring(16, 32);
 							int temp1 = Integer.parseInt(rs, 2);
 							a = temp1 * 32 - 1;
-							rd = rt;
 						}
 						else if (op.equals(BNE) || op.equals(BEQ))
 						{
@@ -374,7 +447,7 @@ public class Simulator
 							shift = "";
 							func = "";
 							imm = IFtoID[1].substring(16, 32);
-							imm = String.format("%32s", Integer.toBinaryString(Integer.parseInt(imm, 2))).replace(' ', '0');
+							imm = String.format("%16s", Integer.toBinaryString(Integer.parseInt(imm, 2))).replace(' ', '0');
 							rs = IFtoID[1].substring(6, 11);
 							rt = IFtoID[1].substring(11, 16);
 							int temp1 = Integer.parseInt(rs, 2);
@@ -398,11 +471,12 @@ public class Simulator
 							shift = "";
 							func = "";
 							rs =IFtoID[1].substring(6, 11);
-							rt = IFtoID[1].substring(11, 16);
+							rt = "";
+							rd = IFtoID[1].substring(11, 16);
 							imm = IFtoID[1].substring(16, 32);
 							int temp1 = Integer.parseInt(rs, 2);
 							a = regFile[temp1];
-							rd = rt;
+							
 						}
 						System.out.println("");
 						System.out.println("  IDtoEX REG  ");
@@ -481,12 +555,13 @@ public class Simulator
 						}
 						else if(exeOP.equals(LW) || exeOP.equals(SW))
 						{
-							store = IDtoEXE[4];
+							String p = IDtoEXE[4];
+							store = String.format("%16s", p).replace(" ", "0");
 							char sign = store.substring(0, 1).toCharArray()[0];
 							store = String.format("%32s", store).replace(' ', sign);
 							int t = Integer.parseInt(store, 2);
-							int offset = Integer.parseInt(IDtoEXE[3], 2);
-							System.out.println("k: " + offset);
+							int offset = Integer.parseInt(IDtoEXE[3], 2); 
+							System.out.println("offset: " + offset);
 							t = t+offset;
 							if(exeOP.equals(LW))
 							{
@@ -560,7 +635,7 @@ public class Simulator
 						}
 						else if(memOP.equals(SW))
 						{
-							ilocation = dataMem[Integer.parseInt(EXEtoMEM[6], 2)];
+							ilocation = Integer.parseInt(EXEtoMEM[6], 2);
 							iresult = regFile[Integer.parseInt(EXEtoMEM[2], 2)];
 							dataMem[ilocation] = iresult;
 						}
@@ -596,12 +671,12 @@ public class Simulator
 						System.out.println("  WB STAGE  ");
 						System.out.println("============");
 						System.out.println("Instruction: " + MEMtoWB[0]);
-						System.out.println("Register Number: "  + MEMtoWB[2]);
-						System.out.println("Value: " + MEMtoWB[3]);
-						
-						regFile[Integer.parseInt(MEMtoWB[2], 2)] = Integer.parseInt(MEMtoWB[3], 2);
-						System.out.print(regFile[3]);
-						
+						if(!(MEMtoWB[0].contains("sw") || MEMtoWB[0].contains("bne") || MEMtoWB[0].contains("beq")))
+						{
+							System.out.println("Register Number: "  + MEMtoWB[2]);
+							System.out.println("Value: " + MEMtoWB[3]);
+							regFile[Integer.parseInt(MEMtoWB[2], 2)] = Integer.parseInt(MEMtoWB[3], 2);
+						}
 					}
 					else
 					{
@@ -614,7 +689,9 @@ public class Simulator
 					//Pipeline Register MEMtoWB Update
 					MEMtoWB[0] = EXEtoMEM[0]; // Instruction
 					MEMtoWB[1] = EXEtoMEM[1]; // Op-Code
-					MEMtoWB[5] = EXEtoMEM[5]; // PC+4
+					MEMtoWB[2] = "";
+					MEMtoWB[3] = "";
+					MEMtoWB[4] = EXEtoMEM[5]; // PC+4
 					if(memOP.equals(_R) || memOP.equals(ADDI))
 					{
 						MEMtoWB[2] = EXEtoMEM[2]; // rd (destination for write back)
@@ -631,14 +708,28 @@ public class Simulator
 					}
 					
 					// Pipeline register EXEtoMEM update
-					EXEtoMEM[0] = IDtoEXE[0]; // Instruction
-					EXEtoMEM[1] = IDtoEXE[1]; // OpCode
-					EXEtoMEM[2] = IDtoEXE[2]; // rd
-					EXEtoMEM[3] = answer; // ALU result
-					EXEtoMEM[4] = target; // Branch target
-					EXEtoMEM[5] = IDtoEXE[5]; // PC+4
-					EXEtoMEM[6] = store; // value to store
-					EXEtoMEM[7] = load; // load location
+					if(!IDtoEXE[0].equals("NOP"))
+					{
+						EXEtoMEM[0] = IDtoEXE[0]; // Instruction
+						EXEtoMEM[1] = IDtoEXE[1]; // OpCode
+						EXEtoMEM[2] = IDtoEXE[2]; // rd
+						EXEtoMEM[3] = answer; // ALU result
+						EXEtoMEM[4] = target; // Branch target
+						EXEtoMEM[5] = IDtoEXE[5]; // PC+4
+						EXEtoMEM[6] = store; // value to store
+						EXEtoMEM[7] = load; // load location
+					}
+					else
+					{
+						EXEtoMEM[0] = "NOP";
+						EXEtoMEM[1] = "";
+						EXEtoMEM[2] = "";
+						EXEtoMEM[3] = "";
+						EXEtoMEM[4] = "";
+						EXEtoMEM[5] = "";
+						EXEtoMEM[6] = "";
+						EXEtoMEM[7] = "";
+					}
 					
 
 					// Pipeline Register IDtoEXE Update
@@ -651,6 +742,8 @@ public class Simulator
 						IDtoEXE[4] = Integer.toBinaryString(b); // second operand
 						IDtoEXE[5] = IFtoID[2]; //PC+4
 						IDtoEXE[6] = func;
+						IDtoEXE[7] = rs;
+						IDtoEXE[8] = rt;
 					}
 					else if ((regOP.equals(ADDI)) && !stall)
 					{
@@ -660,15 +753,20 @@ public class Simulator
 						IDtoEXE[3] = Integer.toBinaryString(a); // first operand
 						IDtoEXE[4] = imm; // Immediate to be added
 						IDtoEXE[5] = IFtoID[2]; // PC+4
+						IDtoEXE[7] = rs;
+						IDtoEXE[8] = "";
 					}
 					else if((regOP.equals(LW) || regOP.equals(SW)) && !stall)
 					{
 						IDtoEXE[0] = IFtoID[0]; // Instruction
 						IDtoEXE[1] = op; // opcode of instruction
 						IDtoEXE[2] = rd; // Destination of loaded value
-						IDtoEXE[3] = Integer.toBinaryString(a); // Register to load from/store to
+						IDtoEXE[3] = Integer.toBinaryString(a); // Register to load from/location to store to
 						IDtoEXE[4] = imm; // Immediate for load/store
 						IDtoEXE[5] = IFtoID[2]; // PC+4
+						IDtoEXE[6] = "";
+						IDtoEXE[7] = "";
+						IDtoEXE[8] = "";
 					}
 					else if(regOP.equals(BNE) || regOP.equals(BEQ))
 					{
@@ -679,10 +777,19 @@ public class Simulator
 						IDtoEXE[4] = Integer.toBinaryString(b); //rt
 						IDtoEXE[5] = imm; // address for branch
 						IDtoEXE[6] = IFtoID[2]; //PC+4
+						IDtoEXE[7] = "";
+						IDtoEXE[8] = "";
 					}
 					else
 					{
 						IDtoEXE[0] = "NOP";
+						IDtoEXE[1] = "";
+						IDtoEXE[2] = "";
+						IDtoEXE[3] = "";
+						IDtoEXE[4] = "";
+						IDtoEXE[5] = "";
+						IDtoEXE[6] = "";
+						IDtoEXE[7] = "";
 					}
 					
 					// Pipeline Register IFtoID Update
