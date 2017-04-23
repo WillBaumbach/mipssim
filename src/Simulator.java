@@ -1,5 +1,3 @@
-package mipssim;
-
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.FileInputStream;
@@ -13,7 +11,7 @@ import java.util.regex.PatternSyntaxException;
 
 public class Simulator 
 {
-	static String filepath = "src/mipssim/tv1.txt";
+	static String filepath = "src/tv1.txt";
 	
 	//Initial parameters
 	static int numRegisters 	= 	32;
@@ -211,6 +209,7 @@ public class Simulator
 	 {		 
 		 String forward = "";
 		 boolean isforward = false;
+		 boolean swforward = false;
 		 
 		 String s = "";
 		 int PC = PCPointer;
@@ -291,10 +290,10 @@ public class Simulator
 					// Forwarding Logic
 					if(!EXEtoMEM[0].equals("NOP") && !IDtoEXE[0].equals("NOP"))
 					{
-						System.out.println(EXEtoMEM[0]);
-						System.out.println(EXEtoMEM[2]);
-						System.out.println(EXEtoMEM[3]);
-						System.out.println(IDtoEXE[7]);
+						//System.out.println(EXEtoMEM[0]);
+						//System.out.println(EXEtoMEM[2]);
+						//System.out.println(EXEtoMEM[3]);
+						//System.out.println(IDtoEXE[7]);
 						if(!EXEtoMEM[0].contains("sw") && EXEtoMEM[2].equals(IDtoEXE[7]) && !EXEtoMEM[3].equals("N/A"))
 						{
 							if(EXEtoMEM[1].equals("100011")) 
@@ -324,6 +323,14 @@ public class Simulator
 							{
 								IDtoEXE[4] = EXEtoMEM[3];
 
+							}
+						}
+						if(IDtoEXE[0].contains("sw"))
+						{
+							if(IDtoEXE[2].equals(EXEtoMEM[2]) && !EXEtoMEM[3].equals("N/A"))
+							{
+								swforward = true;
+								iresult = Integer.parseInt(EXEtoMEM[3], 2);
 							}
 						}
 					}
@@ -561,7 +568,6 @@ public class Simulator
 							store = String.format("%32s", store).replace(' ', sign);
 							int t = Integer.parseInt(store, 2);
 							int offset = Integer.parseInt(IDtoEXE[3], 2); 
-							System.out.println("offset: " + offset);
 							t = t+offset;
 							if(exeOP.equals(LW))
 							{
@@ -570,7 +576,7 @@ public class Simulator
 							}
 							else
 							{
-								store = Integer.toBinaryString(dataMem[t]);
+								store = Integer.toBinaryString(t);
 								load = "N/A";
 							}
 						}
@@ -582,9 +588,6 @@ public class Simulator
 							target = String.format("%32s", target).replace(' ', sign);
 							String t = IDtoEXE[6];
 							target = Integer.toBinaryString(Integer.parseInt(t, 10) + Integer.parseInt(target, 2)); // PC+4 + offset
-							
-							System.out.println("rs: " + IDtoEXE[3]);
-							System.out.println("rt: " + IDtoEXE[4]);
 							
 							if(IDtoEXE[3].equals(IDtoEXE[4]) && exeOP.equals(BEQ))
 							{
@@ -635,8 +638,10 @@ public class Simulator
 						}
 						else if(memOP.equals(SW))
 						{
+							
 							ilocation = Integer.parseInt(EXEtoMEM[6], 2);
-							iresult = regFile[Integer.parseInt(EXEtoMEM[2], 2)];
+							if(!swforward)
+								iresult = regFile[Integer.parseInt(EXEtoMEM[2], 2)];
 							dataMem[ilocation] = iresult;
 						}
 						else if(memOP.equals(BNE) || memOP.equals(BEQ))
