@@ -5,9 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Scanner;
-import java.util.regex.PatternSyntaxException;
 
 public class Simulator 
 {
@@ -81,13 +79,7 @@ public class Simulator
 		 
 		 return lineArray;
 	 }
-             
-	 /*
-	  * TODO: 	Add data structure to hold labels and addresses
-	  * 		Finish the code for I type and J ins
-	  * 
-	  * 
-	  * */
+
 	 public static String inputToBinary(String s)
 	 {
 		 String ins = null;
@@ -108,14 +100,10 @@ public class Simulator
 			currentString = currentString.replace("0x", "");
 			currentString = currentString.replace("(", " ");
 			currentString = currentString.replace(")", "");
-
-			System.out.println(currentString);
-
 			tempArray = currentString.split("\\s+");
 			switch (tempArray[0])
 			{
 			
-				// TODO: Make sure immediate is correct, and make sure formatting take "()" into consideration
 				case "lw":
 					tempString = LW;
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
@@ -124,7 +112,6 @@ public class Simulator
 					ins = LW + rs + rt + immediate;
 					break;
 					
-				// TODO: Make sure immediate is correct, and make sure formatting takes "()" into consideration
 				case "sw":
 					tempString = SW;
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
@@ -154,7 +141,6 @@ public class Simulator
 					ins = tempString;
 					break;
 					
-					// TODO: Make sure immediate is correct
 				case "bne":
 					immediate = String.format("%16s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
@@ -163,7 +149,6 @@ public class Simulator
 					ins = tempString;
 					break;
 					
-					// TODO: Make sure immediate is correct
 				case "beq":
 					immediate = String.format("%16s", Integer.toBinaryString(Integer.parseInt(tempArray[3]))).replace(' ', '0');
 					rs = String.format("%5s", Integer.toBinaryString(Integer.parseInt(tempArray[1]))).replace(' ', '0');
@@ -207,8 +192,6 @@ public class Simulator
 	 
 	 public static void main(String[] args)
 	 {		 
-		 String forward = "";
-		 boolean isforward = false;
 		 boolean swforward = false;
 		 
 		 String s = "";
@@ -235,7 +218,6 @@ public class Simulator
 		 String result = "";
 		 int iresult = 0;
 		 int ilocation = 0;
-		 String location = "";
 		 
 		 Boolean stall = false;
 		
@@ -276,12 +258,6 @@ public class Simulator
 		
 		while(running)
 		{
-			//System.out.println(IFtoID[0]);
-			//System.out.println(IDtoEXE[0]);
-			//System.out.println(EXEtoMEM[0]);
-			//System.out.println(MEMtoWB[0]);
-			
-			
 			if(count <= (insArray.size() + 5) && (!(IFtoID[0].equals("NOP")) || !(IDtoEXE[0].equals("NOP")) || !(EXEtoMEM[0].equals("NOP")) || !(MEMtoWB[0].equals("NOP"))))
 			{
 				cycles = kbd.nextInt();
@@ -290,10 +266,6 @@ public class Simulator
 					// Forwarding Logic
 					if(!EXEtoMEM[0].equals("NOP") && !IDtoEXE[0].equals("NOP"))
 					{
-						//System.out.println(EXEtoMEM[0]);
-						//System.out.println(EXEtoMEM[2]);
-						//System.out.println(EXEtoMEM[3]);
-						//System.out.println(IDtoEXE[7]);
 						if(!EXEtoMEM[0].contains("sw") && EXEtoMEM[2].equals(IDtoEXE[7]) && !EXEtoMEM[3].equals("N/A"))
 						{
 							if(EXEtoMEM[1].equals("100011")) 
@@ -301,13 +273,11 @@ public class Simulator
 								iresult = dataMem[Integer.parseInt(EXEtoMEM[7], 2)];
 								result = Integer.toBinaryString(iresult);
 								IDtoEXE[3] = result;
-
 							}
 							else
 							{
 								
 								IDtoEXE[3] = EXEtoMEM[3];
-
 							}
 						}
 						if(!EXEtoMEM[0].contains("sw") && EXEtoMEM[2].equals(IDtoEXE[8]) && !EXEtoMEM[3].equals("N/A"))
@@ -322,7 +292,6 @@ public class Simulator
 							else
 							{
 								IDtoEXE[4] = EXEtoMEM[3];
-
 							}
 						}
 						if(IDtoEXE[0].contains("sw"))
@@ -331,6 +300,14 @@ public class Simulator
 							{
 								swforward = true;
 								iresult = Integer.parseInt(EXEtoMEM[3], 2);
+							}
+						}
+						if(!MEMtoWB[0].equals("NOP") && EXEtoMEM[0].contains("sw"))
+						{
+							if(EXEtoMEM[2].equals(MEMtoWB[2]))
+							{
+								swforward = true;
+								iresult = Integer.parseInt(MEMtoWB[3],2);
 							}
 						}
 					}
@@ -342,7 +319,6 @@ public class Simulator
 							if(!EXEtoMEM[2].equals(IDtoEXE[7]) || EXEtoMEM[0].contains("sw"))
 							{
 								IDtoEXE[3] = MEMtoWB[3];
-
 							}
 						}
 						if(!MEMtoWB[0].contains("sw") && MEMtoWB[2].equals(IDtoEXE[8]))
@@ -350,7 +326,6 @@ public class Simulator
 							if(!EXEtoMEM[2].equals(IDtoEXE[8]) || EXEtoMEM[0].contains("sw"))
 							{
 								IDtoEXE[4] = MEMtoWB[3];
-
 							}
 						}
 						if(!MEMtoWB[0].contains("sw") && MEMtoWB[2].equals(IDtoEXE[7]))
@@ -358,7 +333,6 @@ public class Simulator
 							if(!EXEtoMEM[2].equals(IDtoEXE[7]) || EXEtoMEM[0].contains("sw"))
 							{
 								IDtoEXE[3] = MEMtoWB[3];
-
 							}
 						}
 					}
@@ -375,7 +349,6 @@ public class Simulator
 					if(insArray.size() > count && IFtoID[0] != null && !insArray.get(count).equals("nop") && !stall)
 					{
 						s = insArray.get(count);
-						System.out.println(s);
 						decodedIns = inputToBinary(s);
 						
 						
@@ -816,6 +789,7 @@ public class Simulator
 							IFtoID[2] = Integer.toString(PC);
 						}
 					}
+					swforward = false;
 					cyclecount++;
 					count++;
 					System.out.println("#############################################");
